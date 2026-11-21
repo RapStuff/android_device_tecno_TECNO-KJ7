@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
-# AOSP resolves out/.../kernel through PRODUCT_COPY_FILES. The older
-# Lineage product gets that target from its own kernel build task.
+ifeq ($(TARGET_PRODUCT),aosp_TECNO_KJ7)
+# AOSP resolves out/.../kernel through PRODUCT_COPY_FILES. LineageOS
+# generates the kernel target from TARGET_PREBUILT_KERNEL in kernel.mk.
 PRODUCT_COPY_FILES += device/tecno/TECNO-KJ7-kernel/kernel:kernel
+endif
 
 # Retain HIDL discovery for the Android 12 vendor and install its original
 # framework FCM as an additional Android 17 system matrix.

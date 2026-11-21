@@ -19,7 +19,9 @@ PRODUCT_AAPT_PREF_CONFIG := xxhdpi
 PRODUCT_SYSTEM_PROPERTIES += ro.sf.lcd_density=480
 DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay
 ifneq ($(TARGET_PRODUCT),aosp_TECNO_KJ7)
+ifneq ($(wildcard vendor/lineage/config/device_framework_matrix.xml),)
 DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay-lineage
+endif
 endif
 
 PRODUCT_COPY_FILES += \

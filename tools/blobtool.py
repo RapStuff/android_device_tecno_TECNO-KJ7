@@ -135,7 +135,9 @@ def generate(entries, output):
         rel = f.relative_to(odm).as_posix()
         copy_vintf.append(f'{DEVICE_REL}/vintf/odm/{rel}:$(TARGET_COPY_OUT_VENDOR)/odm/etc/vintf/{rel}')
     make = HEADER + 'ifneq ($(TARGET_PRODUCT),aosp_TECNO_KJ7)\n'
+    make += 'ifneq ($(wildcard hardware/interfaces/compatibility_matrices/compatibility_matrix.6.xml),)\n'
     make += make_list('PRODUCT_COPY_FILES', copy_vintf)
+    make += 'endif\n'
     make += 'endif\n'
     make += '\nifeq ($(KJ7_REBUILD_VENDOR),true)\n'
     make += f'PRODUCT_SOONG_NAMESPACES += {VENDOR_REL}\n'

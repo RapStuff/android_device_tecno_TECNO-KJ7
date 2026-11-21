@@ -115,7 +115,16 @@ VENDOR_SECURITY_PATCH := 2025-04-05
 DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/vintf/manifest.xml
 DEVICE_MATRIX_FILE := $(DEVICE_PATH)/vintf/compatibility_matrix.xml
 
-ifeq ($(TARGET_PRODUCT),aosp_TECNO_KJ7)
+ifeq ($(filter-out aosp_TECNO_KJ7,$(TARGET_PRODUCT)),)
+KJ7_USE_AOSP17_COMPAT := true
+else ifeq ($(wildcard hardware/interfaces/compatibility_matrices/compatibility_matrix.6.xml),)
+# Android 17+ trees (such as LineageOS 24) drop FCM 6 and own BOARD_SEPOLICY_VERS.
+ifeq ($(wildcard vendor/lineage/config/device_framework_matrix.xml),)
+KJ7_USE_AOSP17_COMPAT := true
+endif
+endif
+
+ifeq ($(KJ7_USE_AOSP17_COMPAT),true)
 include $(DEVICE_PATH)/aosp17/BoardConfig.mk
 else
 BOARD_VNDK_VERSION := current
