@@ -77,14 +77,7 @@
             <instance>default</instance>
         </interface>
     </hal>
-    <hal format="hidl">
-        <name>android.hardware.automotive.sv</name>
-        <version>1.0</version>
-        <interface>
-            <name>ISurroundViewService</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
+    <!-- android.hardware.automotive.sv@1.0 removed in Android 17 hardware/interfaces; unused by KJ7. -->
     <hal format="hidl">
         <name>android.hardware.automotive.vehicle</name>
         <version>2.0</version>
@@ -207,14 +200,7 @@
             <regex-instance>.*</regex-instance>
         </interface>
     </hal>
-    <hal format="hidl">
-        <name>android.hardware.dumpstate</name>
-        <version>1.1</version>
-        <interface>
-            <name>IDumpstateDevice</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
+    <!-- android.hardware.dumpstate@1.1 removed in Android 17 hardware/interfaces; unused by KJ7. -->
     <hal format="hidl">
         <name>android.hardware.gatekeeper</name>
         <version>1.0</version>
@@ -306,22 +292,7 @@
             <instance>default</instance>
         </interface>
     </hal>
-    <hal format="hidl">
-        <name>android.hardware.ir</name>
-        <version>1.0</version>
-        <interface>
-            <name>IConsumerIr</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
-    <hal format="hidl">
-        <name>android.hardware.input.classifier</name>
-        <version>1.0</version>
-        <interface>
-            <name>IInputClassifier</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
+    <!-- android.hardware.ir@1.0 and input.classifier@1.0 removed in Android 17 hardware/interfaces; unused by KJ7. -->
     <hal format="hidl">
         <name>android.hardware.keymaster</name>
         <version>3.0</version>
