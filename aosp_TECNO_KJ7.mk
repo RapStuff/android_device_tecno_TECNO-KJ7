@@ -9,7 +9,7 @@ $(call inherit-product, device/tecno/TECNO-KJ7/device.mk)
 $(call inherit-product, device/tecno/TECNO-KJ7/aosp17/product.mk)
 
 PRODUCT_NAME := aosp_TECNO_KJ7
-PRODUCT_DEVICE := TECNO-KJ7
+PRODUCT_DEVICE := TECNO_KJ7
 PRODUCT_BRAND := TECNO
 PRODUCT_MODEL := TECNO KJ7
 PRODUCT_MANUFACTURER := TECNO

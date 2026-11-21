@@ -7,7 +7,7 @@ $(call inherit-product, device/tecno/TECNO-KJ7/aosp17/product.mk)
 endif
 $(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 
-PRODUCT_DEVICE := TECNO-KJ7
+PRODUCT_DEVICE := TECNO_KJ7
 PRODUCT_NAME := lineage_TECNO_KJ7
 PRODUCT_BRAND := TECNO
 PRODUCT_MODEL := TECNO KJ7

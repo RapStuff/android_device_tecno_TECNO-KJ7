@@ -156,7 +156,7 @@ BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
 endif
 ''')
     # The stock image already owns these links. Register them only for source vendor.
-    mk = HEADER + 'ifeq ($(TARGET_DEVICE),TECNO-KJ7)\nifeq ($(KJ7_REBUILD_VENDOR),true)\n'
+    mk = HEADER + 'ifneq ($(filter TECNO-KJ7 TECNO_KJ7,$(TARGET_DEVICE)),)\nifeq ($(KJ7_REBUILD_VENDOR),true)\n'
     for relative, target in symlinks:
         if not re.fullmatch(r'[\w./@+\[\]-]+', target):
             raise ValueError(f'unrepresentable symlink target: {relative} -> {target}')
