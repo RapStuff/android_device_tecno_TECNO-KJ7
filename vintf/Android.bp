@@ -89,6 +89,7 @@ prebuilt_etc {
     filename_from_src: true,
     relative_install_path: "vintf/manifest",
     vendor: true,
+    overrides: ["android.hardware.wifi.hostapd.xml"],
 }
 
 prebuilt_etc {
@@ -97,6 +98,7 @@ prebuilt_etc {
     filename_from_src: true,
     relative_install_path: "vintf/manifest",
     vendor: true,
+    overrides: ["android.hardware.wifi.supplicant.xml"],
 }
 
 prebuilt_etc {
