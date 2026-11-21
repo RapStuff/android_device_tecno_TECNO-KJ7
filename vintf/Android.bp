@@ -314,35 +314,3 @@ prebuilt_etc {
     relative_install_path: "vintf/manifest",
     vendor: true,
 }
-
-prebuilt_etc {
-    name: "odm_manifest_dsds.xml",
-    src: "odm/manifest_dsds.xml",
-    filename_from_src: true,
-    relative_install_path: "vintf",
-    device_specific: true,
-}
-
-prebuilt_etc {
-    name: "odm_manifest_qsqs.xml",
-    src: "odm/manifest_qsqs.xml",
-    filename_from_src: true,
-    relative_install_path: "vintf",
-    device_specific: true,
-}
-
-prebuilt_etc {
-    name: "odm_manifest_ss.xml",
-    src: "odm/manifest_ss.xml",
-    filename_from_src: true,
-    relative_install_path: "vintf",
-    device_specific: true,
-}
-
-prebuilt_etc {
-    name: "odm_manifest_tsts.xml",
-    src: "odm/manifest_tsts.xml",
-    filename_from_src: true,
-    relative_install_path: "vintf",
-    device_specific: true,
-}

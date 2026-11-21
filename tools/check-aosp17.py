@@ -51,15 +51,20 @@ def check_kernel():
 
 def check_vintf_staging():
     root = DEVICE / 'vintf'
-    pairs = [(root / 'manifest.xml', VENDOR / 'proprietary/vendor/etc/vintf/manifest.xml')]
-    pairs.extend((f, VENDOR / 'proprietary/vendor/etc/vintf/manifest' / f.name)
-                 for f in (root / 'fragments').glob('*.xml'))
-    pairs.extend((f, VENDOR / 'proprietary/vendor/odm/etc/vintf' / f.name)
-                 for f in (root / 'odm').glob('*.xml'))
+    vendor_pairs = [(root / 'manifest.xml', VENDOR / 'proprietary/vendor/etc/vintf/manifest.xml')]
+    vendor_pairs.extend((f, VENDOR / 'proprietary/vendor/etc/vintf/manifest' / f.name)
+                        for f in (root / 'fragments').glob('*.xml'))
+    odm_pairs = [(f, VENDOR / 'proprietary/vendor/odm/etc/vintf' / f.name)
+                 for f in (root / 'odm').glob('*.xml')]
     bp = (root / 'Android.bp').read_text()
-    staged = set(re.findall(r'src:\s*"([^"]+)"', bp))
-    if staged != {p.relative_to(root).as_posix() for p, _ in pairs}:
+    staged_bp = set(re.findall(r'src:\s*"([^"]+)"', bp))
+    if staged_bp != {p.relative_to(root).as_posix() for p, _ in vendor_pairs}:
         raise SystemExit('Staged VINTF entries diverged from the stock inventory')
+    a17_bc = (DEVICE / 'aosp17/BoardConfig.mk').read_text()
+    staged_odm = set(re.findall(r'vintf/(odm/[^\s]+)', a17_bc))
+    if staged_odm != {p.relative_to(root).as_posix() for p, _ in odm_pairs}:
+        raise SystemExit('Staged ODM VINTF entries diverged from the stock inventory')
+    pairs = vendor_pairs + odm_pairs
     for src, original in pairs:
         if src.read_bytes() != original.read_bytes():
             raise SystemExit(f'Staged manifest diverged from stock: {src}')
