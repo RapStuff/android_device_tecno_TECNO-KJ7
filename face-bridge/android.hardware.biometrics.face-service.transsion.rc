@@ -1,0 +1,5 @@
+service system_ext.face-bridge /system_ext/bin/hw/android.hardware.biometrics.face-service.transsion
+    class hal
+    user system
+    group system camera input
+    interface aidl android.hardware.biometrics.face.IFace/default

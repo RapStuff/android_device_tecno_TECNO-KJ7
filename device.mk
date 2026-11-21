@@ -27,4 +27,10 @@ endif
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/rootdir/etc/fstab.mt6789:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.mt6789
 
+PRODUCT_SOONG_NAMESPACES += $(LOCAL_PATH)/face-bridge
+
+PRODUCT_PACKAGES += \
+    android.hardware.biometrics.face-service.transsion \
+    KJ7BiometricsOverlay
+
 $(call inherit-product, vendor/tecno/TECNO-KJ7/TECNO-KJ7-vendor.mk)

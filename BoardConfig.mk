@@ -115,6 +115,8 @@ VENDOR_SECURITY_PATCH := 2025-04-05
 DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/vintf/manifest.xml
 DEVICE_MATRIX_FILE := $(DEVICE_PATH)/vintf/compatibility_matrix.xml
 
+SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/system_ext/private
+
 ifeq ($(filter-out aosp_TECNO_KJ7,$(TARGET_PRODUCT)),)
 KJ7_USE_AOSP17_COMPAT := true
 else ifeq ($(wildcard hardware/interfaces/compatibility_matrices/compatibility_matrix.6.xml),)

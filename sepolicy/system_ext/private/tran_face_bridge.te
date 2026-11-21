@@ -1,0 +1,6 @@
+type tran_face_bridge, domain;
+type tran_face_bridge_exec, system_file_type, exec_type, file_type;
+
+hal_server_domain(tran_face_bridge, hal_face)
+typeattribute tran_face_bridge coredomain;
+init_daemon_domain(tran_face_bridge)

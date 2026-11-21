@@ -2,7 +2,7 @@
 <resources>
     <!-- Stock centered punch-hole; units in the path are dp. -->
     <string name="config_mainBuiltInDisplayCutout" translatable="false">M -24,0 L -24,36 L 24,36 L 24,0 Z @dp</string>
-    <bool name="config_fillMainBuiltInDisplayCutout">true</bool>
+    <bool name="config_fillMainBuiltInDisplayCutout">false</bool>
     <dimen name="status_bar_height_portrait">36dp</dimen>
     <dimen name="status_bar_height_landscape">28dp</dimen>
 
