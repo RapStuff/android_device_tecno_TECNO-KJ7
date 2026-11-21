@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-PRODUCT_SOONG_NAMESPACES += device/tecno/TECNO-KJ7/vintf
+PRODUCT_SOONG_NAMESPACES += device/tecno/TECNO_KJ7/vintf
 
 PRODUCT_PACKAGES += \
     kj7_a17_vendor_vintf_manifest.xml \

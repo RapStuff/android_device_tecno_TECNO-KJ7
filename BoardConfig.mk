@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-DEVICE_PATH := device/tecno/TECNO-KJ7
+DEVICE_PATH := device/tecno/TECNO_KJ7
 KJ7_KERNEL_PATH := device/tecno/TECNO-KJ7-kernel
 
 TARGET_ARCH := arm64

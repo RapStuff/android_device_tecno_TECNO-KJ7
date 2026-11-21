@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
-$(call inherit-product, device/tecno/TECNO-KJ7/device.mk)
+$(call inherit-product, device/tecno/TECNO_KJ7/device.mk)
 ifeq ($(wildcard hardware/interfaces/compatibility_matrices/compatibility_matrix.6.xml),)
-$(call inherit-product, device/tecno/TECNO-KJ7/aosp17/product.mk)
+$(call inherit-product, device/tecno/TECNO_KJ7/aosp17/product.mk)
 endif
 $(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 

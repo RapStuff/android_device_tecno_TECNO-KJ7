@@ -5,8 +5,8 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/generic_system.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_system_ext.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/telephony_system_ext.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_product.mk)
-$(call inherit-product, device/tecno/TECNO-KJ7/device.mk)
-$(call inherit-product, device/tecno/TECNO-KJ7/aosp17/product.mk)
+$(call inherit-product, device/tecno/TECNO_KJ7/device.mk)
+$(call inherit-product, device/tecno/TECNO_KJ7/aosp17/product.mk)
 
 PRODUCT_NAME := aosp_TECNO_KJ7
 PRODUCT_DEVICE := TECNO_KJ7

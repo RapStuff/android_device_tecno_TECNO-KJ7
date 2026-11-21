@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-LOCAL_PATH := device/tecno/TECNO-KJ7
+LOCAL_PATH := device/tecno/TECNO_KJ7
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/compression.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/developer_gsi_keys.mk)

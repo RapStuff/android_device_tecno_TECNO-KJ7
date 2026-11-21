@@ -13,7 +13,7 @@ PRODUCT_PACKAGES += \
     hwservicemanager \
     kj7_a17_fcm6
 
-$(call inherit-product, device/tecno/TECNO-KJ7/aosp17/vintf-staging.mk)
+$(call inherit-product, device/tecno/TECNO_KJ7/aosp17/vintf-staging.mk)
 
 # Keep OTA verification of the actual kernel release and embedded config.
 PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := true
