@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# OEM AVB footers are preserved. Stock fs_mgr verifies these with tran_avb.pubkey.
+KJ7_TR_PARTITIONS := tr_carrier tr_company tr_mi tr_preload tr_product tr_region tr_theme
+KJ7_TR_IMAGE_DIR := vendor/tecno/TECNO-KJ7/prebuilt-images
+BOARD_CUSTOMIMAGES_PARTITION_LIST += $(KJ7_TR_PARTITIONS)
+
+BOARD_TR_CARRIER_IMAGE_LIST := $(KJ7_TR_IMAGE_DIR)/tr_carrier.img
+BOARD_TR_COMPANY_IMAGE_LIST := $(KJ7_TR_IMAGE_DIR)/tr_company.img
+BOARD_TR_MI_IMAGE_LIST := $(KJ7_TR_IMAGE_DIR)/tr_mi.img
+BOARD_TR_PRELOAD_IMAGE_LIST := $(KJ7_TR_IMAGE_DIR)/tr_preload.img
+BOARD_TR_PRODUCT_IMAGE_LIST := $(KJ7_TR_IMAGE_DIR)/tr_product.img
+BOARD_TR_REGION_IMAGE_LIST := $(KJ7_TR_IMAGE_DIR)/tr_region.img
+BOARD_TR_THEME_IMAGE_LIST := $(KJ7_TR_IMAGE_DIR)/tr_theme.img
+
+# superimage's direct build reads INSTALLED_<PARTITION>IMAGE_TARGET.
+INSTALLED_TR_CARRIERIMAGE_TARGET = $(PRODUCT_OUT)/tr_carrier.img
+INSTALLED_TR_COMPANYIMAGE_TARGET = $(PRODUCT_OUT)/tr_company.img
+INSTALLED_TR_MIIMAGE_TARGET = $(PRODUCT_OUT)/tr_mi.img
+INSTALLED_TR_PRELOADIMAGE_TARGET = $(PRODUCT_OUT)/tr_preload.img
+INSTALLED_TR_PRODUCTIMAGE_TARGET = $(PRODUCT_OUT)/tr_product.img
+INSTALLED_TR_REGIONIMAGE_TARGET = $(PRODUCT_OUT)/tr_region.img
+INSTALLED_TR_THEMEIMAGE_TARGET = $(PRODUCT_OUT)/tr_theme.img
+
+BOARD_ROOT_EXTRA_FOLDERS += tranfs $(KJ7_TR_PARTITIONS)
