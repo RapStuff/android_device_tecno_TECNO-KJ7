@@ -86,19 +86,17 @@ prebuilt_etc {
 prebuilt_etc {
     name: "kj7_a17_vendor_vintf_fragments_android.hardware.wifi.hostapd.xml",
     src: "fragments/android.hardware.wifi.hostapd.xml",
-    filename_from_src: true,
+    filename: "kj7_android.hardware.wifi.hostapd.xml",
     relative_install_path: "vintf/manifest",
     vendor: true,
-    overrides: ["android.hardware.wifi.hostapd.xml"],
 }
 
 prebuilt_etc {
     name: "kj7_a17_vendor_vintf_fragments_android.hardware.wifi.supplicant.xml",
     src: "fragments/android.hardware.wifi.supplicant.xml",
-    filename_from_src: true,
+    filename: "kj7_android.hardware.wifi.supplicant.xml",
     relative_install_path: "vintf/manifest",
     vendor: true,
-    overrides: ["android.hardware.wifi.supplicant.xml"],
 }
 
 prebuilt_etc {
