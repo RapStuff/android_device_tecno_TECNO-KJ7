@@ -22,6 +22,7 @@ binder_call(cameraserver, hal_face_default)
 # Stats / UI / Bridge fd use
 allow hal_face_default fwk_stats_hwservice:hwservice_manager find;
 binder_call(hal_face_default, stats_service_server)
+binder_call(hal_face_default, system_app)
 allow hal_face_default system_app:fd use;
 
 # Face data & NVRAM/mnt_vendor storage

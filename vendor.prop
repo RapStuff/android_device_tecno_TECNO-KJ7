@@ -244,7 +244,7 @@ ro.vendor.init.sensor.rc=init.sensor_2_0.rc
 
 # Transsion / Silead / Biometrics
 persist.vendor.fingerprint.sensor_id=0
-persist.vendor.fingerprint.sensor_location=540|2204|91|0
+persist.vendor.fingerprint.sensor_location=540|2204|91
 persist.vendor.fingerprint.sensor_strength=2
 persist.vendor.fingerprint.type=udfps_optical
 ro.vendor.tranfac.support=1

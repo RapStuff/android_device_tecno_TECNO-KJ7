@@ -32,4 +32,7 @@
 
     <!-- AIDL fingerprint and face HALs are discovered from VINTF -->
     <string-array name="config_biometric_sensors" translatable="false" />
+
+    <!-- Device uses on-screen navigation bar / gesture navigation -->
+    <bool name="config_showNavigationBar">true</bool>
 </resources>

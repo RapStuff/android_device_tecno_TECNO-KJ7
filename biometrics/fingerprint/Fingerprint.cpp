@@ -51,7 +51,7 @@ fingerprint_device_t* Fingerprint::openHal() {
 
     const hw_module_t* hwModule = nullptr;
     const char* libPath = nullptr;
-    if (vendorName == "silead" || access("/dev/silead_fp", F_OK) == 0) {
+    if (vendorName.find("silead") != std::string::npos || access("/dev/silead_fp", F_OK) == 0) {
         libPath = "/vendor/lib64/hw/fingerprint.silead.default.so";
     } else if (vendorName == "goodix" || access("/dev/goodix_fp", F_OK) == 0) {
         libPath = "/vendor/lib64/hw/gf_fingerprint.default.so";
@@ -105,7 +105,7 @@ fingerprint_device_t* Fingerprint::openHal() {
 std::vector<SensorLocation> Fingerprint::getSensorLocations() {
     std::vector<SensorLocation> locations;
     std::string loc = ::android::base::GetProperty("persist.vendor.fingerprint.sensor_location",
-                                                   "540|2204|91|0");
+                                                   "540|2204|91");
     for (const auto& entry : ::android::base::Split(loc, ",")) {
         auto dim = ::android::base::Split(entry, "|");
         if (dim.size() != 3 && dim.size() != 4) continue;
@@ -120,7 +120,7 @@ std::vector<SensorLocation> Fingerprint::getSensorLocations() {
         s.sensorLocationX = x;
         s.sensorLocationY = y;
         s.sensorRadius = r;
-        if (dim.size() == 4) {
+        if (dim.size() == 4 && !dim[3].empty()) {
             s.display = dim[3];
         }
         locations.push_back(std::move(s));
