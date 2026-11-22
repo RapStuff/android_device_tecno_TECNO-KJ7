@@ -241,6 +241,7 @@ ro.vendor.mtk_trustonic_tee_support=1
 
 # Sensors
 ro.vendor.init.sensor.rc=init.sensor_2_0.rc
+ro.vendor.mtk.sensor.support=yes
 
 # Transsion / Silead / Biometrics
 persist.vendor.fingerprint.sensor_id=0

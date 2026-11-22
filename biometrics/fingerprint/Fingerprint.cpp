@@ -87,6 +87,9 @@ fingerprint_device_t* Fingerprint::openHal() {
     }
 
     if (isSilead) {
+        ::android::base::WriteStringToFile("1", "/proc/fingerprint_status");
+        ::android::base::WriteStringToFile("fp1", "/proc/gesture_function");
+
         mSileadOps.custCmd =
                 resolveSym<int (*)(uint32_t, uint32_t)>(implHandle, halHandle, "silfp_finger_cust_cmd");
         mSileadOps.setFingerStatusMode = resolveSym<int (*)(int32_t)>(

@@ -1,6 +1,14 @@
 service vendor.fingerprint-default /vendor/bin/hw/android.hardware.biometrics.fingerprint-service.tecno_kj7
-    class late_start
+    class hal
     user system
-    group system input uhid
+    group system input uhid wakelock
+    capabilities BLOCK_SUSPEND WAKE_ALARM
     interface aidl android.hardware.biometrics.fingerprint.IFingerprint/default
     writepid /dev/cpuset/system-background/tasks
+
+on post-fs-data
+    mkdir /data/vendor_de/0/fpdata 0700 system system
+    chmod 0666 /sys/class/input/event4/device/device/fts_gesture_mode
+    chmod 0666 /sys/class/input/event3/device/device/fts_gesture_mode
+    write /proc/fingerprint_status 1
+    write /proc/gesture_function fp1

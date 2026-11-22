@@ -38,6 +38,7 @@
 
     <!-- Double tap to wake & power/doze/proximity decoupling -->
     <bool name="config_supportDoubleTapWake">true</bool>
+    <bool name="config_dozePulsePickup">true</bool>
     <bool name="config_powerDecoupleAutoSuspendModeFromDisplay">true</bool>
     <bool name="config_powerDecoupleInteractiveModeFromDisplay">true</bool>
     <bool name="config_suspendWhenScreenOffDueToProximity">true</bool>

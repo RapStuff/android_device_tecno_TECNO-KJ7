@@ -156,11 +156,11 @@ bool Session::enableHbmAndWait(int32_t timeoutMs) {
             return false;
         }
         if (::android::base::ReadFileToString(kLcmHbmPath, &state) &&
-            state.find("0xOK") != std::string::npos) {
+            (state.find("0xOK") != std::string::npos || state == "1\n" || state == "1")) {
             return true;
         }
         setHbm(true);
-        std::this_thread::sleep_for(std::chrono::milliseconds(3));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     ALOGW("LCM HBM did not confirm 0xOK within %dms (last='%s')", timeoutMs, state.c_str());
     return false;
@@ -461,14 +461,14 @@ ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t x, int3
     ALOGI("onPointerDown(%d, %d) -> enabling HBM and triggering Silead capture", x, y);
     mCb->onAcquired(AcquiredInfo::START, 0);
 
-    enableHbmAndWait(500);
+    enableHbmAndWait(120);
     if (!mFingerDown.load(std::memory_order_acquire) || !mActive.load(std::memory_order_acquire)) {
         setHbm(false);
         return ndk::ScopedAStatus::ok();
     }
 
-    // Settle after HBM confirmation before Silead wait_ui_ready (30ms) + optical exposure.
-    std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    // Brief settle for CMOS exposure uniformity after HBM activation.
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (!mFingerDown.load(std::memory_order_acquire) || !mActive.load(std::memory_order_acquire)) {
         setHbm(false);
         return ndk::ScopedAStatus::ok();
@@ -571,12 +571,15 @@ ndk::ScopedAStatus Session::cancel() {
 ndk::ScopedAStatus Session::close() {
     if (!mClosed.exchange(true, std::memory_order_acq_rel)) {
         stopScreenOffMonitor();
-        mActive.store(false, std::memory_order_release);
+        const bool wasActive = mActive.exchange(false, std::memory_order_acq_rel);
         mFingerDown.store(false, std::memory_order_release);
         setHbm(false);
         syncFingerUp();
         sendVendorCmd(kCmdSileadUiReady, 0);
         armFodGesture(false);
+        if (wasActive && mDevice && mDevice->cancel) {
+            mDevice->cancel(mDevice);
+        }
         if (mDeathRecipient) {
             AIBinder_DeathRecipient_delete(mDeathRecipient);
             mDeathRecipient = nullptr;

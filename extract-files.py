@@ -102,7 +102,7 @@ def patch_libsl_fp_impl(ctx, file, file_path: str, *args, **kwargs):
 
     sections = _parse_elf_sections(elf)
 
-    # 1. Bypass netlink FULL_HBM_SET wait in silfp_cust_wait_ui_ready with 30ms usleep + return 0
+    # 1. Bypass netlink FULL_HBM_SET wait in silfp_cust_wait_ui_ready with 5ms usleep + return 0
     vma_wait_ui, off_wait_ui = _find_elf_symbol(elf, sections, 'silfp_cust_wait_ui_ready')
     plt_usleep = _find_plt_entry(elf, sections, 'usleep')
     if not vma_wait_ui or not off_wait_ui or not plt_usleep:
@@ -113,7 +113,7 @@ def patch_libsl_fp_impl(ctx, file, file_path: str, *args, **kwargs):
     elf[off_wait_ui : off_wait_ui + 24] = struct.pack(
         '<6I',
         0xa9bf7bfd,  # stp x29, x30, [sp, #-16]!
-        0x528ea600,  # mov w0, #30000
+        0x52827100,  # mov w0, #5000
         bl_insn,     # bl usleep@plt
         0x52800000,  # mov w0, #0
         0xa8c17bfd,  # ldp x29, x30, [sp], #16
@@ -152,6 +152,18 @@ def patch_libsl_fp_impl(ctx, file, file_path: str, *args, **kwargs):
         if insn not in (0xb945c708, 0x52800028):
             raise RuntimeError(f'Unexpected opcode at silfp_dev_wait_finger_status+0x{rel:x}: 0x{insn:08x}')
         elf[off_wait + rel : off_wait + rel + 4] = struct.pack('<I', 0x52800028)  # mov w8, #1
+
+    # 8. Force enrollment finger-down wait through silfp_impl_wait_finger_down (msg pipe)
+    #    instead of TEE polling loop when GSL7002 init2 capability bit 6 is set.
+    _vma, off_get_down = _find_elf_symbol(elf, sections, 'silfp_impl_get_finger_down_with_cancel')
+    if not off_get_down:
+        raise RuntimeError(f'Missing silfp_impl_get_finger_down_with_cancel in {file_path}')
+    insn_bit6 = struct.unpack('<I', elf[off_get_down + 0x30 : off_get_down + 0x34])[0]
+    if insn_bit6 not in (0x37300148, 0xd503201f):
+        raise RuntimeError(
+            f'Unexpected opcode at silfp_impl_get_finger_down_with_cancel+0x30: 0x{insn_bit6:08x}'
+        )
+    elf[off_get_down + 0x30 : off_get_down + 0x34] = struct.pack('<I', 0xd503201f)  # nop
 
     with open(file_path, 'wb') as f:
         f.write(elf)
