@@ -87,6 +87,78 @@ bool isInsideFodArea(int32_t x, int32_t y) {
     return (dx * dx + dy * dy) <= kFodTouchRadiusSq;
 }
 
+bool isDisplayDpmsOn() {
+    std::string dpms;
+    if (!::android::base::ReadFileToString("/sys/class/drm/card0-DSI-1/dpms", &dpms)) {
+        return true;
+    }
+    return dpms.find("On") != std::string::npos || dpms.find("on") != std::string::npos;
+}
+
+void wakeDisplayPipeline() {
+    static std::chrono::steady_clock::time_point lastWake{};
+    auto now = std::chrono::steady_clock::now();
+    if (lastWake.time_since_epoch().count() != 0 &&
+        std::chrono::duration_cast<std::chrono::milliseconds>(now - lastWake).count() < 600) {
+        return;
+    }
+    lastWake = now;
+
+    int fd = -1;
+    std::string devPath = "/dev/input/event0";
+    if (DIR* dir = opendir("/dev/input")) {
+        struct dirent* ent;
+        while ((ent = readdir(dir)) != nullptr) {
+            if (strncmp(ent->d_name, "event", 5) != 0) continue;
+            std::string path = std::string("/dev/input/") + ent->d_name;
+            int candidate = open(path.c_str(), O_WRONLY | O_CLOEXEC);
+            if (candidate < 0) continue;
+            char name[128] = {};
+            if (ioctl(candidate, EVIOCGNAME(sizeof(name) - 1), name) >= 0 &&
+                std::string(name).find("pmic-keys") != std::string::npos) {
+                fd = candidate;
+                devPath = path;
+                break;
+            }
+            close(candidate);
+        }
+        closedir(dir);
+    }
+    if (fd < 0) {
+        fd = open(devPath.c_str(), O_WRONLY | O_CLOEXEC);
+    }
+    if (fd < 0) {
+        ALOGW("wakeDisplayPipeline: failed to open %s", devPath.c_str());
+        return;
+    }
+
+    struct input_event evDown{};
+    evDown.type = EV_KEY;
+    evDown.code = KEY_POWER;
+    evDown.value = 1;
+    struct input_event evSyn{};
+    evSyn.type = EV_SYN;
+    evSyn.code = SYN_REPORT;
+    evSyn.value = 0;
+    struct input_event evUp{};
+    evUp.type = EV_KEY;
+    evUp.code = KEY_POWER;
+    evUp.value = 0;
+
+    (void)!write(fd, &evDown, sizeof(evDown));
+    (void)!write(fd, &evSyn, sizeof(evSyn));
+    std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    (void)!write(fd, &evUp, sizeof(evUp));
+    (void)!write(fd, &evSyn, sizeof(evSyn));
+    close(fd);
+    ALOGI("wakeDisplayPipeline: injected KEY_POWER via %s", devPath.c_str());
+}
+
+void acquireFodWakelock(bool enable) {
+    ::android::base::WriteStringToFile("kj7_fod_wake",
+                                       enable ? "/sys/power/wake_lock" : "/sys/power/wake_unlock");
+}
+
 int openFodInputFd() {
     DIR* dir = opendir("/dev/input");
     if (!dir) return -1;
@@ -218,6 +290,7 @@ void Session::startScreenOffMonitor() {
         int32_t curX = -1;
         int32_t curY = -1;
         bool monitorDown = false;
+        auto lastDownTime = std::chrono::steady_clock::now();
         while (!mMonitorStop.load(std::memory_order_acquire) && !isClosed()) {
             if (fd < 0) {
                 fd = openFodInputFd();
@@ -228,43 +301,69 @@ void Session::startScreenOffMonitor() {
             }
             struct pollfd pfd{fd, POLLIN, 0};
             int pret = poll(&pfd, 1, 50);
-            if (pret <= 0) continue;
-            struct input_event ev{};
-            while (read(fd, &ev, sizeof(ev)) == sizeof(ev)) {
-                if (ev.type == EV_ABS) {
-                    if (ev.code == ABS_MT_POSITION_X) curX = ev.value;
-                    else if (ev.code == ABS_MT_POSITION_Y) curY = ev.value;
-                    else if (ev.code == ABS_MT_TRACKING_ID && ev.value == -1 && monitorDown) {
-                        monitorDown = false;
-                        onPointerUp(0);
-                    }
-                } else if (ev.type == EV_KEY) {
-                    if ((ev.code == kFodKeycode || ev.code == kKeyGesture38 || ev.code == kKeyF20) &&
-                        ev.value == 1 && mActive.load(std::memory_order_acquire) &&
-                        mScreenState.load(std::memory_order_acquire) != 1 && !monitorDown) {
-                        int32_t tx = curX;
-                        int32_t ty = curY;
-                        if (tx < 0 || ty < 0) {
-                            if (!readFtsGesturePoint(&tx, &ty)) {
-                                tx = kFodCenterX;
-                                ty = kFodCenterY;
-                            }
-                        }
-                        if (isInsideFodArea(tx, ty)) {
-                            ALOGI("Screen-off FOD touch key=%u at (%d,%d)", ev.code, tx, ty);
-                            monitorDown = true;
-                            onPointerDown(0, tx, ty, 0.0f, 0.0f);
-                        }
-                    } else if (ev.code == BTN_TOUCH && ev.value == 0) {
-                        curX = -1;
-                        curY = -1;
-                        if (monitorDown) {
+            if (pret > 0) {
+                struct input_event ev{};
+                while (read(fd, &ev, sizeof(ev)) == sizeof(ev)) {
+                    if (ev.type == EV_ABS) {
+                        if (ev.code == ABS_MT_POSITION_X) {
+                            curX = (ev.value > 1080) ? (ev.value / 16) : ev.value;
+                        } else if (ev.code == ABS_MT_POSITION_Y) {
+                            curY = (ev.value > 2436) ? (ev.value / 16) : ev.value;
+                        } else if (ev.code == ABS_MT_TRACKING_ID && ev.value == -1 && monitorDown) {
                             monitorDown = false;
                             onPointerUp(0);
+                            acquireFodWakelock(false);
+                        }
+                    } else if (ev.type == EV_KEY) {
+                        if ((ev.code == kFodKeycode || ev.code == kKeyGesture38 || ev.code == kKeyF20) &&
+                            ev.value == 1 && mActive.load(std::memory_order_acquire) &&
+                            mScreenState.load(std::memory_order_acquire) != 1 && !monitorDown) {
+                            int32_t tx = curX;
+                            int32_t ty = curY;
+                            if (tx < 0 || ty < 0) {
+                                if (!readFtsGesturePoint(&tx, &ty)) {
+                                    tx = kFodCenterX;
+                                    ty = kFodCenterY;
+                                }
+                            }
+                            if (isInsideFodArea(tx, ty)) {
+                                if (!isDisplayDpmsOn()) {
+                                    wakeDisplayPipeline();
+                                }
+                                acquireFodWakelock(true);
+                                ALOGI("Screen-off FOD touch key=%u at (%d,%d)", ev.code, tx, ty);
+                                monitorDown = true;
+                                lastDownTime = std::chrono::steady_clock::now();
+                                onPointerDown(0, tx, ty, 0.0f, 0.0f);
+                            }
+                        } else if (ev.code == BTN_TOUCH && ev.value == 0) {
+                            curX = -1;
+                            curY = -1;
+                            if (monitorDown) {
+                                monitorDown = false;
+                                onPointerUp(0);
+                                acquireFodWakelock(false);
+                            }
                         }
                     }
                 }
             }
+            if (monitorDown && !mFingerDown.load(std::memory_order_acquire)) {
+                monitorDown = false;
+                acquireFodWakelock(false);
+            } else if (monitorDown &&
+                       std::chrono::duration_cast<std::chrono::milliseconds>(
+                               std::chrono::steady_clock::now() - lastDownTime)
+                                       .count() >= 1500) {
+                ALOGW("Screen-off FOD monitor watchdog timeout -> forcing pointerUp");
+                monitorDown = false;
+                onPointerUp(0);
+                acquireFodWakelock(false);
+            }
+        }
+        if (monitorDown) {
+            onPointerUp(0);
+            acquireFodWakelock(false);
         }
         if (fd >= 0) ::close(fd);
     });
@@ -467,7 +566,8 @@ ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t x, int3
     ALOGI("onPointerDown(%d, %d) -> enabling HBM and triggering Silead capture", x, y);
     mCb->onAcquired(AcquiredInfo::START, 0);
 
-    enableHbmAndWait(120);
+    const int32_t hbmWaitMs = (mScreenState.load(std::memory_order_acquire) == 1) ? 250 : 500;
+    enableHbmAndWait(hbmWaitMs);
     if (!mFingerDown.load(std::memory_order_acquire) || !mActive.load(std::memory_order_acquire)) {
         setHbm(false);
         return ndk::ScopedAStatus::ok();
@@ -536,10 +636,13 @@ ndk::ScopedAStatus Session::onContextChanged(const common::OperationContext& con
     const int32_t newState = (context.displayState == common::DisplayState::AOD)     ? 2
                            : (context.displayState == common::DisplayState::NO_UI)   ? 0
                                                                                      : 1;
-    const int32_t vendorScreenState = isAodOrOff ? 0 : 1;
+    const int32_t vendorScreenState = (newState == 0) ? 0 : 1;
     mScreenState.store(newState, std::memory_order_release);
     if (mOps.screenStateCallback) {
         mOps.screenStateCallback(vendorScreenState);
+    }
+    if (newState != 0) {
+        sendVendorCmd(kCmdSileadUiReady, 1);
     }
     if (isAodOrOff && mActive.load(std::memory_order_acquire)) {
         armFodGesture(true);

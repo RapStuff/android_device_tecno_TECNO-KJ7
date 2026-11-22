@@ -39,8 +39,9 @@ Fn resolveSym(void* primary, void* secondary, const char* name) {
 
 }  // namespace
 
-Fingerprint::Fingerprint() : mDevice(openHal()) {
+Fingerprint::Fingerprint() {
     sInstance = this;
+    mDevice = openHal();
 }
 
 Fingerprint::~Fingerprint() {
