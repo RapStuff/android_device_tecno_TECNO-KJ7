@@ -212,6 +212,10 @@ blob_fixups: blob_fixups_user_type = {
     ): blob_fixup()
         .replace_needed('libtinyxml2.so', 'libtinyxml2-v34.so'),
     (
+        'vendor/lib64/libwifi-hal-mtk.so',
+    ): blob_fixup()
+        .fix_soname(),
+    (
         'vendor/etc/init/init.volte_md_status.rc',
     ): blob_fixup()
         .binary_regex_replace(b'system/vendor', b'vendor'),

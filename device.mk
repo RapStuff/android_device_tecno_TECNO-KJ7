@@ -4,6 +4,7 @@ LOCAL_PATH := device/tecno/TECNO_KJ7
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/compression.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/developer_gsi_keys.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
+$(call inherit-product, frameworks/native/build/phone-xhdpi-6144-dalvik-heap.mk)
 
 PRODUCT_SHIPPING_API_LEVEL := 31
 TARGET_REQUIRES_HIDL_CAS_HAL := false
