@@ -138,6 +138,7 @@ $(call soong_config_set,power_libperfmgr,mode_extension_lib,//device/tecno/TECNO
 # SELinux
 include device/mediatek/sepolicy_vndr/SEPolicy.mk
 BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/vendor
+SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/private
 
 # Wi-Fi
 WPA_SUPPLICANT_VERSION := VER_0_8_X

@@ -1,0 +1,9 @@
+# Transsion root mountpoints (BOARD_ROOT_EXTRA_FOLDERS)
+/tranfs                     u:object_r:rootfs:s0
+/tr_carrier                 u:object_r:rootfs:s0
+/tr_company                 u:object_r:rootfs:s0
+/tr_mi                      u:object_r:rootfs:s0
+/tr_preload                 u:object_r:rootfs:s0
+/tr_product                 u:object_r:rootfs:s0
+/tr_region                  u:object_r:rootfs:s0
+/tr_theme                   u:object_r:rootfs:s0
