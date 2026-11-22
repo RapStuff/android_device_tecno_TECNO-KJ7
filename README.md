@@ -1,7 +1,7 @@
 Copyright (C) 2026 The LineageOS Project
 
 Device configuration for TECNO Spark 20 Pro+
-=========================================
+==============================================
 
 The TECNO Spark 20 Pro+ (codenamed _"KJ7"_) is a mid-range smartphone from TECNO.
 
@@ -23,4 +23,4 @@ Camera  | 108 MP wide camera, 2 MP macro camera, auxiliary lens, Quad-LED flash 
 
 ## Device picture
 
-![TECNO Spark 20 Pro+](https://fdn2.gsmarena.com/vv/bigpic/tecno-spark-20-pro-plus.jpg)
+![TECNO Spark 20 Pro+](https://fdn2.gsmarena.com/vv/pics/tecno/tecno-spark-20-pro-plus-1.jpg)
