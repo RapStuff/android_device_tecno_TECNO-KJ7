@@ -106,6 +106,7 @@ PRODUCT_PACKAGES += \
     android.hardware.sensors@1.0-convert-shared \
     libavservices_minijail_vendor \
     libbase_shim \
+    libhidlbase-v32 \
     libhidlbase_shim \
     libprocessgroup_shim \
     libstagefright_foundation-v33 \
@@ -191,6 +192,7 @@ PRODUCT_PACKAGES += \
     android.hardware.power-service.lineage-libperfmgr \
     libmtkperf_client_vendor \
     libmtkperf_client \
+    libperfctl_vendor \
     vendor.mediatek.hardware.mtkpower@1.2-service.stub
 
 PRODUCT_COPY_FILES += \

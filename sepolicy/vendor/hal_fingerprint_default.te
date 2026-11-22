@@ -2,4 +2,5 @@ allow hal_fingerprint_default silead_fpd_device:chr_file rw_file_perms;
 allow hal_fingerprint_default silead_fpd_data_file:dir create_dir_perms;
 allow hal_fingerprint_default silead_fpd_data_file:file create_file_perms;
 allow hal_fingerprint_default mnt_vendor_file:dir search;
+allow hal_fingerprint_default self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
 set_prop(hal_fingerprint_default, vendor_silead_fp_prop)

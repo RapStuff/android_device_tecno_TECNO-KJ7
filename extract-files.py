@@ -180,6 +180,10 @@ blob_fixups: blob_fixups_user_type = {
         .clear_symbol_version('AHardwareBuffer_release')
         .clear_symbol_version('AHardwareBuffer_unlock'),
     (
+        'vendor/bin/hw/vendor.mediatek.hardware.pq@2.2-service',
+    ): blob_fixup()
+        .replace_needed('libhidlbase.so', 'libhidlbase-v32.so'),
+    (
         'vendor/etc/init/init.volte_md_status.rc',
     ): blob_fixup()
         .binary_regex_replace(b'system/vendor', b'vendor'),

@@ -67,7 +67,7 @@ vendor/bin/hw/android.hardware.secure_element@1.2-service-mediatek
 vendor/bin/hw/android.hardware.security.keymint-service.trustonic
 vendor/bin/hw/android.hardware.thermal@2.0-service.mtk
 vendor/bin/hw/android.hardware.vibrator-service.mediatek:vendor/bin/hw/android.hardware.vibrator-service.richtap
-vendor/bin/hw/mt6789/android.hardware.graphics.allocator@4.0-service-mediatek.mt6789;SYMLINK=vendor/bin/hw/android.hardware.graphics.allocator@4.0-service-mediatek.mt6789
+vendor/bin/hw/mt6789/android.hardware.graphics.allocator@4.0-service-mediatek.mt6789;SYMLINK=vendor/bin/hw/android.hardware.graphics.allocator@4.0-service-mediatek,vendor/bin/hw/android.hardware.graphics.allocator@4.0-service-mediatek.mt6789
 vendor/bin/hw/mt6789/camerahalserver;SYMLINK=vendor/bin/hw/camerahalserver
 vendor/bin/hw/mtkfusionrild
 vendor/bin/hw/tetheroffloadservice
@@ -101,7 +101,7 @@ vendor/bin/mrdump_tool
 vendor/bin/mt6660_calibration
 vendor/bin/mt6789/dumpfaultd.mt6789;SYMLINK=vendor/bin/dumpfaultd.mt6789
 vendor/bin/mt6789/jpegtool;SYMLINK=vendor/bin/jpegtool
-vendor/bin/mt6789/v3avpud.mt6789;SYMLINK=vendor/bin/v3avpud.mt6789
+vendor/bin/mt6789/v3avpud.mt6789;SYMLINK=vendor/bin/v3avpud,vendor/bin/v3avpud.mt6789
 vendor/bin/mtk_agpsd
 vendor/bin/mtk_pkm_service
 vendor/bin/mtk_plpath_utils_ota
