@@ -6,7 +6,7 @@ cc_prebuilt_binary {
     name: "android.hardware.biometrics.face-service.transsion",
     srcs: ["android.hardware.biometrics.face-service.transsion"],
     relative_install_path: "hw",
-    system_ext_specific: true,
+    vendor: true,
     check_elf_files: false,
     strip: {
         none: true,

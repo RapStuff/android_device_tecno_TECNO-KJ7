@@ -1,0 +1,4 @@
+vendor_internal_prop(vendor_silead_fp_prop)
+vendor_internal_prop(vendor_transsion_fingerprint_prop)
+vendor_internal_prop(vendor_tran_nfc_chip_prop)
+vendor_internal_prop(vendor_tran_mcf_prop)

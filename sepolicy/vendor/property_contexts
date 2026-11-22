@@ -1,0 +1,5 @@
+vendor.silead.fp.ext.                    u:object_r:vendor_silead_fp_prop:s0
+persist.vendor.transsion.auto_test       u:object_r:vendor_transsion_fingerprint_prop:s0
+ro.vendor.camera_tran_hal_server_support u:object_r:vendor_mtk_camera_prop:s0
+persist.vendor.tran_nfc_chip_manufacturer u:object_r:vendor_tran_nfc_chip_prop:s0
+vendor.tran_mcf                          u:object_r:vendor_tran_mcf_prop:s0

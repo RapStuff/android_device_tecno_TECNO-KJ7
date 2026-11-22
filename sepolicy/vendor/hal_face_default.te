@@ -1,0 +1,52 @@
+# Face AIDL bridge + SenseTime / Transsion vendor blob permissions
+hwbinder_use(hal_face_default)
+vndbinder_use(hal_face_default)
+
+hal_client_domain(hal_face_default, hal_power)
+hal_client_domain(hal_face_default, hal_graphics_allocator)
+
+allow hal_face_default mtk_hal_power_hwservice:hwservice_manager find;
+allow hal_face_default mtk_hal_power:binder { call transfer };
+allow hal_face_default mtk_hal_power:dir search;
+allow hal_face_default mtk_hal_power:file r_file_perms;
+
+allow hal_face_default hal_graphics_mapper_hwservice:hwservice_manager find;
+allow hal_face_default hidl_token_hwservice:hwservice_manager find;
+
+# libcamera2ndk_vendor -> cameraserver
+allow hal_face_default fwk_camera_hwservice:hwservice_manager find;
+allow hal_face_default fwk_camera_service:service_manager find;
+binder_call(hal_face_default, cameraserver)
+binder_call(cameraserver, hal_face_default)
+
+# Stats / UI / Bridge fd use
+allow hal_face_default fwk_stats_hwservice:hwservice_manager find;
+binder_call(hal_face_default, stats_service_server)
+allow hal_face_default system_app:fd use;
+
+# Face data & NVRAM/mnt_vendor storage
+allow hal_face_default face_vendor_data_file:dir create_dir_perms;
+allow hal_face_default face_vendor_data_file:file create_file_perms;
+allow hal_face_default mnt_vendor_file:dir search;
+allow hal_face_default nvcfg_file:dir create_dir_perms;
+allow hal_face_default nvcfg_file:file create_file_perms;
+
+# GPU / TEE / Power / GED / Perfmgr nodes used by SenseTime face algo
+allow hal_face_default gpu_device:dir r_dir_perms;
+allow hal_face_default gpu_device:chr_file rw_file_perms;
+allow hal_face_default dri_device:chr_file rw_file_perms;
+allow hal_face_default tee_device:chr_file rw_file_perms;
+allow hal_face_default tkcore_admin_device:chr_file rw_file_perms;
+allow hal_face_default debugfs_ion:dir search;
+allow hal_face_default proc_ged:file rw_file_perms;
+allow hal_face_default proc_perfmgr:dir r_dir_perms;
+allow hal_face_default proc_perfmgr:file rw_file_perms;
+
+# Memory protection / scheduling
+allow hal_face_default self:capability sys_nice;
+allow hal_face_default self:process execmem;
+
+get_prop(hal_face_default, hwservicemanager_prop)
+get_prop(hal_face_default, exported_camera_prop)
+get_prop(hal_face_default, camera_config_prop)
+get_prop(hal_face_default, vendor_mtk_default_prop)

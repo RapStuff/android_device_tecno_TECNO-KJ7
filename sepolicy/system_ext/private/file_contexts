@@ -1,1 +1,0 @@
-/(system_ext|system/system_ext)/bin/hw/android\.hardware\.biometrics\.face-service\.transsion u:object_r:tran_face_bridge_exec:s0

@@ -1,0 +1,12 @@
+vendor.transsion.hardware.security.hap::IHap                          u:object_r:hal_hap_hwservice:s0
+vendor.transsion.hardware.trancam.trancamserver::ITrancamserver       u:object_r:hal_trancamserver_hwservice:s0
+vendor.mediatek.hardware.tranHwInfo::ITranHwInfo                      u:object_r:tran_hwinfo_binder_hwservice:s0
+vendor.mediatek.hardware.biometrics.fingerprint::ITranBiometricsFingerprint  u:object_r:hal_fingerprint_hwservice:s0
+vendor.silead.hardware.fingerprintext::ISileadFingerprint             u:object_r:hal_fingerprint_hwservice:s0
+vendor.mediatek.hardware.paytrigger::IPayTrigger                      u:object_r:hal_paytrigger_hwservice:s0
+android.hardware.paytrigger::Ipaytrigger                              u:object_r:hal_paytrigger_hwservice:s0
+vendor.transsion.hardware.trannet::ITranNet                           u:object_r:hal_trannet_hwservice:s0
+vendor.goodix.hardware.biometrics.fingerprint::IGoodixFingerprintDaemon     u:object_r:goodix_fingerprint_hwservice:s0
+vendor.goodix.hardware.biometrics.fingerprint::IGoodixFingerprintDaemonExt  u:object_r:goodix_fingerprint_hwservice:s0
+vendor.goodix.hardware.biometrics.fingerprint::IGoodixFingerprintDaemonHbd  u:object_r:goodix_fingerprint_hwservice:s0
+vendor.goodix.hardware.biometrics.fingerprint::IGoodixFingerprintDaemonFido u:object_r:goodix_fingerprint_hwservice:s0

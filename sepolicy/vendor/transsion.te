@@ -1,0 +1,62 @@
+# Transsion and MTK vendor service domains
+
+type trancamserver, domain;
+type trancamserver_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(trancamserver)
+hwbinder_use(trancamserver)
+add_hwservice(trancamserver, hal_trancamserver_hwservice)
+
+type tran_hwinfo_binder, domain;
+type tran_hwinfo_binder_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(tran_hwinfo_binder)
+hwbinder_use(tran_hwinfo_binder)
+add_hwservice(tran_hwinfo_binder, tran_hwinfo_binder_hwservice)
+
+type hal_paytrigger, domain;
+type hal_paytrigger_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(hal_paytrigger)
+hwbinder_use(hal_paytrigger)
+add_hwservice(hal_paytrigger, hal_paytrigger_hwservice)
+
+type hal_hap, domain;
+type hal_hap_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(hal_hap)
+hwbinder_use(hal_hap)
+add_hwservice(hal_hap, hal_hap_hwservice)
+
+type tranradionet, domain;
+type tranradionet_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(tranradionet)
+vndbinder_use(tranradionet)
+hwbinder_use(tranradionet)
+add_hwservice(tranradionet, hal_trannet_hwservice)
+allow tranradionet hal_trannet_service:service_manager add;
+
+type chg_sence, domain;
+type chg_sence_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(chg_sence)
+
+type get_ufs_error, domain;
+type get_ufs_error_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(get_ufs_error)
+
+type iomanager, domain;
+type iomanager_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(iomanager)
+
+type pnpmgr, domain;
+type pnpmgr_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(pnpmgr)
+
+type init_tran_mcf_sh, domain;
+type init_tran_mcf_sh_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(init_tran_mcf_sh)
+set_prop(init_tran_mcf_sh, vendor_tran_mcf_prop)
+
+type tran_tinymix, domain;
+type tran_tinymix_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(tran_tinymix)
+
+type aeev, domain;
+type aeev_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(aeev)

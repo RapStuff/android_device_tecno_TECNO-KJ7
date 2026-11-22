@@ -1,4 +1,4 @@
-service system_ext.face-bridge /system_ext/bin/hw/android.hardware.biometrics.face-service.transsion
+service vendor.face-bridge /vendor/bin/hw/android.hardware.biometrics.face-service.transsion
     class hal
     user system
     group system camera input

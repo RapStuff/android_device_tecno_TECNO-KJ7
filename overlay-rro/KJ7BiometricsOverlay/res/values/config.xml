@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Keep HIDL fingerprint config (0:2:15) while removing legacy HIDL face (1:8:4095) -->
-    <string-array name="config_biometric_sensors" translatable="false">
-        <item>0:2:15</item>
-    </string-array>
-</resources>

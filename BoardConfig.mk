@@ -112,26 +112,25 @@ BOARD_AVB_VBMETA_VENDOR_ROLLBACK_INDEX := 4
 BOARD_AVB_VBMETA_VENDOR_ROLLBACK_INDEX_LOCATION := 4
 
 VENDOR_SECURITY_PATCH := 2025-04-05
+BOARD_SHIPPING_API_LEVEL := 31
+TARGET_VENDOR_PROP += $(DEVICE_PATH)/vendor.prop
+
 DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/vintf/manifest.xml
 DEVICE_MATRIX_FILE := $(DEVICE_PATH)/vintf/compatibility_matrix.xml
+DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE := \
+    hardware/mediatek/vintf/mediatek_framework_compatibility_matrix.xml \
+    hardware/mediatek/vintf/mediatek_framework_compatibility_matrix_aidl.xml \
+    $(DEVICE_PATH)/vintf/framework_compatibility_matrix.xml
 
-SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/system_ext/private
+# SELinux
+include device/mediatek/sepolicy_vndr/SEPolicy.mk
+BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/vendor
 
-ifeq ($(filter-out aosp_TECNO_KJ7,$(TARGET_PRODUCT)),)
-KJ7_USE_AOSP17_COMPAT := true
-else ifeq ($(wildcard hardware/interfaces/compatibility_matrices/compatibility_matrix.6.xml),)
-# Android 17+ trees (such as LineageOS 24) drop FCM 6 and own BOARD_SEPOLICY_VERS.
-ifeq ($(wildcard vendor/lineage/config/device_framework_matrix.xml),)
-KJ7_USE_AOSP17_COMPAT := true
-endif
-endif
-
-ifeq ($(KJ7_USE_AOSP17_COMPAT),true)
-include $(DEVICE_PATH)/aosp17/BoardConfig.mk
-else
-BOARD_VNDK_VERSION := current
-BOARD_SEPOLICY_VERS := 31.0
-DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE := $(DEVICE_PATH)/vintf/framework_compatibility_matrix.xml vendor/lineage/config/device_framework_matrix.xml
-endif
+# Wi-Fi
+WPA_SUPPLICANT_VERSION := VER_0_8_X
+BOARD_WPA_SUPPLICANT_DRIVER := NL80211
+BOARD_HOSTAPD_DRIVER := NL80211
+WIFI_DRIVER_FW_PATH_STA := "STA"
+WIFI_DRIVER_FW_PATH_AP := "AP"
 
 include vendor/tecno/TECNO-KJ7/BoardConfigVendor.mk

@@ -1,0 +1,6 @@
+type hal_hap_hwservice, hwservice_manager_type;
+type hal_trancamserver_hwservice, hwservice_manager_type;
+type tran_hwinfo_binder_hwservice, hwservice_manager_type;
+type hal_paytrigger_hwservice, hwservice_manager_type;
+type hal_trannet_hwservice, hwservice_manager_type;
+type goodix_fingerprint_hwservice, hwservice_manager_type;

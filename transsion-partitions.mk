@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # OEM AVB footers are preserved. Stock fs_mgr verifies these with tran_avb.pubkey.
 KJ7_TR_PARTITIONS := tr_carrier tr_company tr_mi tr_preload tr_product tr_region tr_theme
-KJ7_TR_IMAGE_DIR := vendor/tecno/TECNO-KJ7/prebuilt-images
+KJ7_TR_IMAGE_DIR := $(DEVICE_PATH)/prebuilt-images
 BOARD_CUSTOMIMAGES_PARTITION_LIST += $(KJ7_TR_PARTITIONS)
 
 BOARD_TR_CARRIER_IMAGE_LIST := $(KJ7_TR_IMAGE_DIR)/tr_carrier.img
