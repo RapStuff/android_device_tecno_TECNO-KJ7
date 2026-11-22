@@ -268,7 +268,6 @@ $(call inherit-product, vendor/tecno/TECNO-KJ7/TECNO-KJ7-vendor.mk)
 
 # Recovery / fastbootd / OTA sideload (recovery lives in vendor_boot)
 PRODUCT_PACKAGES += \
-    init.recovery.mt6789.rc \
     create_pl_dev.recovery \
     fastbootd \
     android.hardware.fastboot@1.1-impl-mock \
