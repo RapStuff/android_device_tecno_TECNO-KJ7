@@ -90,6 +90,10 @@ fingerprint_device_t* Fingerprint::openHal() {
         ::android::base::WriteStringToFile("1", "/proc/fingerprint_status");
         ::android::base::WriteStringToFile("fp1", "/proc/gesture_function");
 
+        if (auto setLogLevel = resolveSym<void (*)(int32_t)>(implHandle, halHandle, "silfp_log_set_level")) {
+            setLogLevel(1);  // Enable Silead DEBUG logs to surface capture/enroll diagnostics
+        }
+
         mSileadOps.custCmd =
                 resolveSym<int (*)(uint32_t, uint32_t)>(implHandle, halHandle, "silfp_finger_cust_cmd");
         mSileadOps.setFingerStatusMode = resolveSym<int (*)(int32_t)>(

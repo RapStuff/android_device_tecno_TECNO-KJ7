@@ -165,6 +165,18 @@ def patch_libsl_fp_impl(ctx, file, file_path: str, *args, **kwargs):
         )
     elf[off_get_down + 0x30 : off_get_down + 0x34] = struct.pack('<I', 0xd503201f)  # nop
 
+    # 9. Skip silfp_cmd_check_esd() retry loop after msg-pipe finger-down in silfp_impl_wait_finger_down
+    #    so optical touches proceed directly to capture instead of looping back to poll().
+    _vma, off_wait_down = _find_elf_symbol(elf, sections, 'silfp_impl_wait_finger_down')
+    if not off_wait_down:
+        raise RuntimeError(f'Missing silfp_impl_wait_finger_down in {file_path}')
+    insn_bit2 = struct.unpack('<I', elf[off_wait_down + 0xd8 : off_wait_down + 0xdc])[0]
+    if insn_bit2 not in (0x37100268, 0x14000013):
+        raise RuntimeError(
+            f'Unexpected opcode at silfp_impl_wait_finger_down+0xd8: 0x{insn_bit2:08x}'
+        )
+    elf[off_wait_down + 0xd8 : off_wait_down + 0xdc] = struct.pack('<I', 0x14000013)  # b +0x4c
+
     with open(file_path, 'wb') as f:
         f.write(elf)
 

@@ -177,13 +177,19 @@ void Session::sendVendorCmd(uint32_t cmd, uint32_t arg) {
 void Session::syncFingerDown() {
     sendVendorCmd(kCmdSileadUiReady, 1);
     sendVendorCmd(kCmdSileadFingerDown, 1);
+    int ret = -1;
+    const char* path = "none";
     if (mOps.syncFingerStatusOptic) {
-        mOps.syncFingerStatusOptic(1);
+        ret = mOps.syncFingerStatusOptic(1);
+        path = "syncOptic(1)";
     } else if (mOps.devSyncFingerDown) {
-        mOps.devSyncFingerDown();
+        ret = mOps.devSyncFingerDown();
+        path = "devSyncDown";
     } else if (mOps.msgSend) {
-        mOps.msgSend(2);  // FINGER_DOWN = 2
+        ret = mOps.msgSend(2);  // FINGER_DOWN = 2
+        path = "msgSend(2)";
     }
+    ALOGI("syncFingerDown via %s -> %d", path, ret);
 }
 
 void Session::syncFingerUp() {
@@ -479,8 +485,10 @@ ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t x, int3
 }
 
 ndk::ScopedAStatus Session::onPointerUp(int32_t /*pointerId*/) {
-    mFingerDown.store(false, std::memory_order_release);
+    const bool wasDown = mFingerDown.exchange(false, std::memory_order_acq_rel);
     mStepCaptured.store(false, std::memory_order_release);
+    ALOGI("onPointerUp(wasDown=%d, active=%d)", wasDown ? 1 : 0,
+          mActive.load(std::memory_order_acquire) ? 1 : 0);
     setHbm(false);
     syncFingerUp();
     return ndk::ScopedAStatus::ok();
@@ -708,6 +716,7 @@ void Session::notify(const fingerprint_msg_t* msg) {
             }
             int32_t vendorCode = 0;
             AcquiredInfo result = VendorAcquiredFilter(acq, &vendorCode);
+            ALOGI("notify ACQUIRED(%d) -> %d (vendor=%d)", acq, static_cast<int>(result), vendorCode);
             mCb->onAcquired(result, vendorCode);
             break;
         }
