@@ -122,6 +122,9 @@ DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE := \
     hardware/mediatek/vintf/mediatek_framework_compatibility_matrix_aidl.xml \
     $(DEVICE_PATH)/vintf/framework_compatibility_matrix.xml
 
+# Power
+$(call soong_config_set,power_libperfmgr,mode_extension_lib,//device/tecno/TECNO_KJ7/power:libperfmgr-ext-tecno_kj7)
+
 # SELinux
 include device/mediatek/sepolicy_vndr/SEPolicy.mk
 BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/vendor

@@ -43,6 +43,9 @@ FaceHal* gInstancePtr = nullptr;
 using FnOpenCamera = int (*)(void* mgr, const char* cameraId, void* callback, void** device);
 FnOpenCamera gRealOpenCamera = nullptr;
 
+using FnGetWindow = int (*)(void* reader, void** window);
+FnGetWindow gRealGetWindow = nullptr;
+
 int hookedOpenCamera(void* mgr, const char* cameraId, void* callback, void** device) {
     ALOGI("ACameraManager_openCamera intercepted (requested='%s', forcing='1')",
           cameraId ? cameraId : "null");
@@ -51,6 +54,19 @@ int hookedOpenCamera(void* mgr, const char* cameraId, void* callback, void** dev
         return -1;
     }
     return gRealOpenCamera(mgr, "1", callback, device);
+}
+
+int hookedGetWindowNativeHandle(void* reader, void** outWindow) {
+    static std::atomic<bool> loggedOnce{false};
+    if (!loggedOnce.exchange(true, std::memory_order_relaxed)) {
+        ALOGI("AImageReader_getWindowNativeHandle intercepted -> forwarding to AImageReader_getWindow");
+    }
+    if (!gRealGetWindow) {
+        ALOGE("gRealGetWindow is null");
+        if (outWindow) *outWindow = nullptr;
+        return -10000;
+    }
+    return gRealGetWindow(reader, outWindow);
 }
 
 int dummyStFaceInitLicense(const char* /*lic*/) {
@@ -283,6 +299,7 @@ bool FaceHal::openInternal() {
 
     patchSensetimeLicense(handle, mLibBase);
     patchCameraId(handle, mLibBase);
+    patchImageReader(handle, mLibBase);
     patchChallengeCheck(mLibBase);
 
     hw_device_t* dev = nullptr;
@@ -377,6 +394,54 @@ void FaceHal::patchCameraId(void* handle, uintptr_t libBase) {
             gRealOpenCamera = reinterpret_cast<FnOpenCamera>(*gotEntry);
         }
         *gotEntry = reinterpret_cast<uintptr_t>(&hookedOpenCamera);
+    }
+}
+
+void FaceHal::patchImageReader(void* handle, uintptr_t libBase) {
+    const long pageSize = sysconf(_SC_PAGESIZE) > 0 ? sysconf(_SC_PAGESIZE) : 4096;
+
+    void* mediaHandle = dlopen("libmediandk.so", RTLD_LAZY | RTLD_NOLOAD);
+    if (!mediaHandle) {
+        mediaHandle = dlopen("libmediandk.so", RTLD_LAZY);
+    }
+    if (!mediaHandle) {
+        mediaHandle = dlopenInNamespace("libmediandk.so", "sphal");
+    }
+
+    auto resolveSym = [&](const char* name) -> void* {
+        void* sym = dlsym(handle, name);
+        if (!sym && mediaHandle) sym = dlsym(mediaHandle, name);
+        if (!sym) sym = dlsym(RTLD_DEFAULT, name);
+        return sym;
+    };
+
+    gRealGetWindow = reinterpret_cast<FnGetWindow>(resolveSym("AImageReader_getWindow"));
+    auto origGetHandle = reinterpret_cast<uintptr_t>(resolveSym("AImageReader_getWindowNativeHandle"));
+    if (!gRealGetWindow) {
+        ALOGE("Failed to resolve AImageReader_getWindow; skipping ImageReader GOT hook");
+        return;
+    }
+
+    // face.default.so (AOSP 12 vendor prebuilt) calls AImageReader_getWindowNativeHandle and passes
+    // the result straight to AOSP 17 ACaptureSessionOutput_create(ANativeWindow*) /
+    // ACameraOutputTarget_create(ANativeWindow*), which dereferences it as ANativeWindow* -> SIGBUS.
+    auto* gotEntry = reinterpret_cast<uintptr_t*>(libBase + 0xe9d0);
+    uintptr_t gotPage = reinterpret_cast<uintptr_t>(gotEntry) & ~(pageSize - 1);
+    if (mprotect(reinterpret_cast<void*>(gotPage), pageSize * 2, PROT_READ | PROT_WRITE) == 0) {
+        *gotEntry = reinterpret_cast<uintptr_t>(&hookedGetWindowNativeHandle);
+        if (origGetHandle != 0) {
+            auto* start = reinterpret_cast<uintptr_t*>(libBase + 0xe000);
+            const size_t count = 0x1000 / sizeof(uintptr_t);
+            for (size_t i = 0; i < count; ++i) {
+                if (start[i] == origGetHandle) {
+                    start[i] = reinterpret_cast<uintptr_t>(&hookedGetWindowNativeHandle);
+                }
+            }
+        }
+        ALOGI("Hooked AImageReader_getWindowNativeHandle -> AImageReader_getWindow (%p)",
+              gRealGetWindow);
+    } else {
+        ALOGE("mprotect failed while patching AImageReader GOT entry");
     }
 }
 

@@ -34,6 +34,14 @@ on post-fs-data
     chown system system /proc/smb/ScreenComm
     chmod 0660 /proc/smb/ScreenComm
 
+# Touch gestures & optical FOD HBM
+    chown system system /proc/gesture_function
+    chmod 0660 /proc/gesture_function
+    chown system system /proc/fingerprint_status
+    chmod 0660 /proc/fingerprint_status
+    chown system system /sys/devices/platform/soc/14013000.dsi/lcm_hbm_state
+    chmod 0664 /sys/devices/platform/soc/14013000.dsi/lcm_hbm_state
+
     chmod 0660 /dev/spm
     chown system system /dev/spm
 

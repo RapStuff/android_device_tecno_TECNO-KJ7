@@ -7,10 +7,16 @@
 #include "Session.h"
 
 #include <android-base/file.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <linux/input.h>
 #include <log/log.h>
+#include <poll.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <chrono>
+#include <cstdlib>
 #include <string>
 #include <thread>
 #include <vector>
@@ -23,8 +29,23 @@ namespace aidl::android::hardware::biometrics::fingerprint::kj7 {
 namespace {
 
 constexpr const char* kLcmHbmPath = "/sys/devices/platform/soc/14013000.dsi/lcm_hbm_state";
+constexpr const char* kProcFpStatusPath = "/proc/fingerprint_status";
+constexpr const char* kProcGestureFuncPath = "/proc/gesture_function";
+constexpr const char* kFtsGestureBufPath = "/sys/class/input/event4/device/device/fts_gesture_buf";
+
 constexpr uint32_t kCmdSileadUiReady = 10;
 constexpr uint32_t kCmdSileadFingerDown = 11;
+constexpr uint32_t kCmdGoodixHbm = 0x10001;
+
+// Kernel touch keys emitted by mtk-tpd / FocalTech FT3683G in suspend/AOD mode
+constexpr uint16_t kKeyGesture38 = 38;
+constexpr uint16_t kKeyF20 = 190;
+constexpr uint16_t kFodKeycode = 195;
+
+// Calibrated optical sensor area (1080x2436)
+constexpr int32_t kFodCenterX = 540;
+constexpr int32_t kFodCenterY = 2204;
+constexpr int32_t kFodTouchRadiusSq = 150 * 150;
 
 void onClientDeath(void* cookie) {
     auto* session = static_cast<Session*>(cookie);
@@ -43,12 +64,58 @@ std::string ensureFpDataPath(int32_t userId) {
     return fpDir;
 }
 
+bool readFtsGesturePoint(int32_t* outX, int32_t* outY) {
+    std::string content;
+    if (!::android::base::ReadFileToString(kFtsGestureBufPath, &content)) return false;
+    auto start = content.find("0(");
+    if (start == std::string::npos) return false;
+    auto end = content.find(')', start + 2);
+    if (end == std::string::npos) return false;
+    std::string coords = content.substr(start + 2, end - (start + 2));
+    auto comma = coords.find(',');
+    if (comma == std::string::npos) return false;
+    *outX = std::atoi(coords.substr(0, comma).c_str());
+    *outY = std::atoi(coords.substr(comma + 1).c_str());
+    return true;
+}
+
+bool isInsideFodArea(int32_t x, int32_t y) {
+    if (x == 0 && y == 0) return true;
+    if (x < 0 || y < 0) return false;
+    int64_t dx = x - kFodCenterX;
+    int64_t dy = y - kFodCenterY;
+    return (dx * dx + dy * dy) <= kFodTouchRadiusSq;
+}
+
+int openFodInputFd() {
+    DIR* dir = opendir("/dev/input");
+    if (!dir) return -1;
+    struct dirent* ent;
+    int matchedFd = -1;
+    while ((ent = readdir(dir)) != nullptr) {
+        if (strncmp(ent->d_name, "event", 5) != 0) continue;
+        std::string path = std::string("/dev/input/") + ent->d_name;
+        int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+        if (fd < 0) continue;
+        char name[128] = {};
+        if (ioctl(fd, EVIOCGNAME(sizeof(name) - 1), name) >= 0 &&
+            std::string(name) == "mtk-tpd") {
+            matchedFd = fd;
+            ALOGI("Opened screen-off FOD touch input: %s (%s)", path.c_str(), name);
+            break;
+        }
+        close(fd);
+    }
+    closedir(dir);
+    return matchedFd;
+}
+
 }  // namespace
 
-Session::Session(fingerprint_device_t* device, FingerprintCmdFn cmdFn, int32_t userId,
+Session::Session(fingerprint_device_t* device, SileadOps ops, int32_t userId,
                  std::shared_ptr<ISessionCallback> cb, LockoutTracker lockoutTracker)
     : mDevice(device),
-      mCmdFn(cmdFn),
+      mOps(ops),
       mLockoutTracker(lockoutTracker),
       mUserId(userId),
       mCb(std::move(cb)) {
@@ -58,6 +125,11 @@ Session::Session(fingerprint_device_t* device, FingerprintCmdFn cmdFn, int32_t u
         int err = mDevice->set_active_group(mDevice, mUserId, path.c_str());
         ALOGI("set_active_group(user=%d, path=%s) -> %d", mUserId, path.c_str(), err);
     }
+    startScreenOffMonitor();
+}
+
+Session::~Session() {
+    stopScreenOffMonitor();
 }
 
 void Session::linkToDeath(AIBinder* binder) {
@@ -67,14 +139,135 @@ void Session::linkToDeath(AIBinder* binder) {
 }
 
 void Session::setHbm(bool enable) {
-    if (!::android::base::WriteStringToFile(enable ? "1" : "0", kLcmHbmPath)) {
+    const char* val = enable ? "1\n" : "0\n";
+    if (!::android::base::WriteStringToFile(val, kLcmHbmPath)) {
         ALOGW("Failed to write %s to %s", enable ? "1" : "0", kLcmHbmPath);
     }
 }
 
+bool Session::enableHbmAndWait(int32_t timeoutMs) {
+    setHbm(true);
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
+    std::string state;
+    while (std::chrono::steady_clock::now() < deadline) {
+        if (!mFingerDown.load(std::memory_order_acquire) ||
+            !mActive.load(std::memory_order_acquire)) {
+            setHbm(false);
+            return false;
+        }
+        if (::android::base::ReadFileToString(kLcmHbmPath, &state) &&
+            state.find("0xOK") != std::string::npos) {
+            return true;
+        }
+        setHbm(true);
+        std::this_thread::sleep_for(std::chrono::milliseconds(3));
+    }
+    ALOGW("LCM HBM did not confirm 0xOK within %dms (last='%s')", timeoutMs, state.c_str());
+    return false;
+}
+
 void Session::sendVendorCmd(uint32_t cmd, uint32_t arg) {
-    if (mCmdFn && mDevice) {
-        mCmdFn(mDevice, cmd, arg);
+    if (mOps.custCmd) {
+        mOps.custCmd(cmd, arg);
+    } else if (mOps.fingerprintCmd && mDevice) {
+        mOps.fingerprintCmd(mDevice, cmd == kCmdSileadFingerDown ? kCmdGoodixHbm : cmd, arg);
+    }
+}
+
+void Session::syncFingerDown() {
+    sendVendorCmd(kCmdSileadUiReady, 1);
+    sendVendorCmd(kCmdSileadFingerDown, 1);
+    if (mOps.syncFingerStatusOptic) {
+        mOps.syncFingerStatusOptic(1);
+    } else if (mOps.devSyncFingerDown) {
+        mOps.devSyncFingerDown();
+    } else if (mOps.msgSend) {
+        mOps.msgSend(2);  // FINGER_DOWN = 2
+    }
+}
+
+void Session::syncFingerUp() {
+    sendVendorCmd(kCmdSileadFingerDown, 0);
+    if (mOps.syncFingerStatusOptic) {
+        mOps.syncFingerStatusOptic(0);
+    } else if (mOps.devSyncFingerUp) {
+        mOps.devSyncFingerUp();
+    } else if (mOps.msgSend) {
+        mOps.msgSend(3);  // FINGER_UP = 3
+    }
+}
+
+void Session::armFodGesture(bool enable) {
+    ::android::base::WriteStringToFile(enable ? "1" : "0", kProcFpStatusPath);
+    if (enable) {
+        ::android::base::WriteStringToFile("fp1", kProcGestureFuncPath);
+    }
+}
+
+void Session::startScreenOffMonitor() {
+    mMonitorStop.store(false, std::memory_order_release);
+    if (mMonitorThread.joinable()) return;
+    mMonitorThread = std::thread([this]() {
+        int fd = -1;
+        int32_t curX = -1;
+        int32_t curY = -1;
+        bool monitorDown = false;
+        while (!mMonitorStop.load(std::memory_order_acquire) && !isClosed()) {
+            if (fd < 0) {
+                fd = openFodInputFd();
+                if (fd < 0) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                    continue;
+                }
+            }
+            struct pollfd pfd{fd, POLLIN, 0};
+            int pret = poll(&pfd, 1, 50);
+            if (pret <= 0) continue;
+            struct input_event ev{};
+            while (read(fd, &ev, sizeof(ev)) == sizeof(ev)) {
+                if (ev.type == EV_ABS) {
+                    if (ev.code == ABS_MT_POSITION_X) curX = ev.value;
+                    else if (ev.code == ABS_MT_POSITION_Y) curY = ev.value;
+                    else if (ev.code == ABS_MT_TRACKING_ID && ev.value == -1 && monitorDown) {
+                        monitorDown = false;
+                        onPointerUp(0);
+                    }
+                } else if (ev.type == EV_KEY) {
+                    if ((ev.code == kFodKeycode || ev.code == kKeyGesture38 || ev.code == kKeyF20) &&
+                        ev.value == 1 && mActive.load(std::memory_order_acquire) &&
+                        mScreenState.load(std::memory_order_acquire) != 1 && !monitorDown) {
+                        int32_t tx = curX;
+                        int32_t ty = curY;
+                        if (tx < 0 || ty < 0) {
+                            if (!readFtsGesturePoint(&tx, &ty)) {
+                                tx = kFodCenterX;
+                                ty = kFodCenterY;
+                            }
+                        }
+                        if (isInsideFodArea(tx, ty)) {
+                            ALOGI("Screen-off FOD touch key=%u at (%d,%d)", ev.code, tx, ty);
+                            monitorDown = true;
+                            onPointerDown(0, tx, ty, 0.0f, 0.0f);
+                        }
+                    } else if (ev.code == BTN_TOUCH && ev.value == 0) {
+                        curX = -1;
+                        curY = -1;
+                        if (monitorDown) {
+                            monitorDown = false;
+                            onPointerUp(0);
+                        }
+                    }
+                }
+            }
+        }
+        if (fd >= 0) ::close(fd);
+    });
+}
+
+void Session::stopScreenOffMonitor() {
+    mMonitorStop.store(true, std::memory_order_release);
+    if (mMonitorThread.joinable()) {
+        mMonitorThread.join();
     }
 }
 
@@ -96,8 +289,20 @@ ndk::ScopedAStatus Session::enroll(const keymaster::HardwareAuthToken& hat,
                                    std::shared_ptr<common::ICancellationSignal>* out) {
     hw_auth_token_t authToken{};
     translate(hat, authToken);
+
+    mStepCaptured.store(false, std::memory_order_release);
+    mFingerDown.store(false, std::memory_order_release);
+    mSavedEnrollFid.store(0, std::memory_order_release);
+    mActive.store(true, std::memory_order_release);
+
+    if (mOps.msgSend) {
+        mOps.msgSend(3);  // Clear stale finger-up pipe message before enrollment
+    }
+
     int err = (mDevice && mDevice->enroll) ? mDevice->enroll(mDevice, &authToken, mUserId, 60) : -1;
+    ALOGI("enroll(user=%d) -> %d", mUserId, err);
     if (err != 0) {
+        mActive.store(false, std::memory_order_release);
         ALOGE("enroll failed: %d", err);
         mCb->onError(Error::UNABLE_TO_PROCESS, err);
     }
@@ -107,12 +312,20 @@ ndk::ScopedAStatus Session::enroll(const keymaster::HardwareAuthToken& hat,
 
 ndk::ScopedAStatus Session::authenticate(int64_t operationId,
                                          std::shared_ptr<common::ICancellationSignal>* out) {
+    mStepCaptured.store(false, std::memory_order_release);
+    mFingerDown.store(false, std::memory_order_release);
     if (!checkSensorLockout()) {
+        armFodGesture(true);
+        mActive.store(true, std::memory_order_release);
         int err = (mDevice && mDevice->authenticate)
                           ? mDevice->authenticate(mDevice, static_cast<uint64_t>(operationId),
                                                   mUserId)
                           : -1;
+        ALOGI("authenticate(opId=0x%llx, user=%d) -> %d",
+              static_cast<unsigned long long>(operationId), mUserId, err);
         if (err != 0) {
+            mActive.store(false, std::memory_order_release);
+            armFodGesture(false);
             ALOGE("authenticate failed: %d", err);
             mCb->onError(Error::UNABLE_TO_PROCESS, err);
         }
@@ -128,10 +341,34 @@ ndk::ScopedAStatus Session::detectInteraction(std::shared_ptr<common::ICancellat
 }
 
 ndk::ScopedAStatus Session::enumerateEnrollments() {
+    {
+        std::lock_guard<std::mutex> lock(mEnumMutex);
+        mEnumeratedIds.clear();
+    }
+    mEnumCompleted.store(false, std::memory_order_release);
+
     int err = (mDevice && mDevice->enumerate) ? mDevice->enumerate(mDevice) : -1;
     if (err != 0) {
         ALOGE("enumerate failed: %d", err);
+        mEnumCompleted.store(true, std::memory_order_release);
         mCb->onEnrollmentsEnumerated({});
+        return ndk::ScopedAStatus::ok();
+    }
+
+    // Silead does not always invoke callback when database is empty; wait briefly then fall back.
+    for (int i = 0; i < 10; ++i) {
+        if (mEnumCompleted.load(std::memory_order_acquire)) {
+            return ndk::ScopedAStatus::ok();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    if (!mEnumCompleted.exchange(true, std::memory_order_acq_rel)) {
+        std::vector<int32_t> snapshot;
+        {
+            std::lock_guard<std::mutex> lock(mEnumMutex);
+            snapshot = mEnumeratedIds;
+        }
+        mCb->onEnrollmentsEnumerated(snapshot);
     }
     return ndk::ScopedAStatus::ok();
 }
@@ -141,11 +378,16 @@ ndk::ScopedAStatus Session::removeEnrollments(const std::vector<int32_t>& enroll
         mCb->onEnrollmentsRemoved({});
         return ndk::ScopedAStatus::ok();
     }
+    mRemovePending.store(true, std::memory_order_release);
     for (int32_t fid : enrollmentIds) {
         int err = mDevice->remove(mDevice, mUserId, fid);
         if (err != 0) {
             ALOGE("remove(fid=%d) failed: %d", fid, err);
         }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    if (mRemovePending.exchange(false, std::memory_order_acq_rel)) {
+        mCb->onEnrollmentsRemoved(enrollmentIds);
     }
     return ndk::ScopedAStatus::ok();
 }
@@ -172,17 +414,44 @@ ndk::ScopedAStatus Session::resetLockout(const keymaster::HardwareAuthToken& /*h
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t /*x*/, int32_t /*y*/,
+ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t x, int32_t y,
                                           float /*minor*/, float /*major*/) {
-    setHbm(true);
-    sendVendorCmd(kCmdSileadUiReady, 1);
-    sendVendorCmd(kCmdSileadFingerDown, 1);
+    if (!mActive.load(std::memory_order_acquire)) {
+        return ndk::ScopedAStatus::ok();
+    }
+    if (!isInsideFodArea(x, y)) {
+        return ndk::ScopedAStatus::ok();
+    }
+    if (mFingerDown.exchange(true, std::memory_order_acq_rel)) {
+        return ndk::ScopedAStatus::ok();
+    }
+    mStepCaptured.store(false, std::memory_order_release);
+
+    ALOGI("onPointerDown(%d, %d) -> enabling HBM and triggering Silead capture", x, y);
+    mCb->onAcquired(AcquiredInfo::START, 0);
+
+    enableHbmAndWait(500);
+    if (!mFingerDown.load(std::memory_order_acquire) || !mActive.load(std::memory_order_acquire)) {
+        setHbm(false);
+        return ndk::ScopedAStatus::ok();
+    }
+
+    // 5ms settle after HBM confirmation (matches silfp_cust_wait_ui_ready patch)
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    if (!mFingerDown.load(std::memory_order_acquire) || !mActive.load(std::memory_order_acquire)) {
+        setHbm(false);
+        return ndk::ScopedAStatus::ok();
+    }
+
+    syncFingerDown();
     return ndk::ScopedAStatus::ok();
 }
 
 ndk::ScopedAStatus Session::onPointerUp(int32_t /*pointerId*/) {
+    mFingerDown.store(false, std::memory_order_release);
+    mStepCaptured.store(false, std::memory_order_release);
     setHbm(false);
-    sendVendorCmd(kCmdSileadUiReady, 0);
+    syncFingerUp();
     return ndk::ScopedAStatus::ok();
 }
 
@@ -192,32 +461,50 @@ ndk::ScopedAStatus Session::onUiReady() {
 }
 
 ndk::ScopedAStatus Session::authenticateWithContext(
-        int64_t operationId, const common::OperationContext& /*context*/,
+        int64_t operationId, const common::OperationContext& context,
         std::shared_ptr<common::ICancellationSignal>* out) {
+    onContextChanged(context);
     return authenticate(operationId, out);
 }
 
 ndk::ScopedAStatus Session::enrollWithContext(const keymaster::HardwareAuthToken& hat,
-                                              const common::OperationContext& /*context*/,
+                                              const common::OperationContext& context,
                                               std::shared_ptr<common::ICancellationSignal>* out) {
+    onContextChanged(context);
     return enroll(hat, out);
 }
 
 ndk::ScopedAStatus Session::detectInteractionWithContext(
-        const common::OperationContext& /*context*/,
+        const common::OperationContext& context,
         std::shared_ptr<common::ICancellationSignal>* out) {
+    onContextChanged(context);
     return detectInteraction(out);
 }
 
 ndk::ScopedAStatus Session::onPointerDownWithContext(const PointerContext& context) {
-    return onPointerDown(context.pointerId, context.x, context.y, context.minor, context.major);
+    return onPointerDown(context.pointerId, static_cast<int32_t>(context.x),
+                         static_cast<int32_t>(context.y), context.minor, context.major);
 }
 
 ndk::ScopedAStatus Session::onPointerUpWithContext(const PointerContext& context) {
     return onPointerUp(context.pointerId);
 }
 
-ndk::ScopedAStatus Session::onContextChanged(const common::OperationContext& /*context*/) {
+ndk::ScopedAStatus Session::onContextChanged(const common::OperationContext& context) {
+    const bool isAodOrOff = (context.displayState == common::DisplayState::AOD ||
+                             context.displayState == common::DisplayState::NO_UI ||
+                             context.displayState == common::DisplayState::SCREENSAVER);
+    const int32_t newState = (context.displayState == common::DisplayState::AOD)     ? 2
+                           : (context.displayState == common::DisplayState::NO_UI)   ? 0
+                                                                                     : 1;
+    const int32_t vendorScreenState = isAodOrOff ? 0 : 1;
+    mScreenState.store(newState, std::memory_order_release);
+    if (mOps.screenStateCallback) {
+        mOps.screenStateCallback(vendorScreenState);
+    }
+    if (isAodOrOff && mActive.load(std::memory_order_acquire)) {
+        armFodGesture(true);
+    }
     return ndk::ScopedAStatus::ok();
 }
 
@@ -230,8 +517,14 @@ ndk::ScopedAStatus Session::setIgnoreDisplayTouches(bool /*shouldIgnore*/) {
 }
 
 ndk::ScopedAStatus Session::cancel() {
+    mActive.store(false, std::memory_order_release);
+    mFingerDown.store(false, std::memory_order_release);
+    mStepCaptured.store(false, std::memory_order_release);
     setHbm(false);
+    syncFingerUp();
     sendVendorCmd(kCmdSileadUiReady, 0);
+    armFodGesture(false);
+
     if (!mDevice || !mDevice->cancel) {
         mCb->onError(Error::CANCELED, 0);
         return ndk::ScopedAStatus::ok();
@@ -246,8 +539,13 @@ ndk::ScopedAStatus Session::cancel() {
 
 ndk::ScopedAStatus Session::close() {
     if (!mClosed.exchange(true, std::memory_order_acq_rel)) {
+        stopScreenOffMonitor();
+        mActive.store(false, std::memory_order_release);
+        mFingerDown.store(false, std::memory_order_release);
         setHbm(false);
+        syncFingerUp();
         sendVendorCmd(kCmdSileadUiReady, 0);
+        armFodGesture(false);
         if (mCb) {
             mCb->onSessionClosed();
         }
@@ -351,41 +649,74 @@ void Session::notify(const fingerprint_msg_t* msg) {
 
     switch (msg->type) {
         case FINGERPRINT_ERROR: {
+            mActive.store(false, std::memory_order_release);
+            mFingerDown.store(false, std::memory_order_release);
             setHbm(false);
+            syncFingerUp();
             sendVendorCmd(kCmdSileadUiReady, 0);
+            armFodGesture(false);
             int32_t vendorCode = 0;
             Error result = VendorErrorFilter(msg->data.error, &vendorCode);
+            ALOGI("notify ERROR(%d) -> %d (vendor=%d)", msg->data.error, static_cast<int>(result),
+                  vendorCode);
             mCb->onError(result, vendorCode);
             break;
         }
         case FINGERPRINT_ACQUIRED: {
+            const int32_t acq = msg->data.acquired.acquired_info;
+            // Suppress Silead internal optical handshake codes (1001=down, 1002=up, 1020=wait_ui)
+            if (acq == 1001 || acq == 1002 || acq == 1020) {
+                break;
+            }
             int32_t vendorCode = 0;
-            AcquiredInfo result =
-                    VendorAcquiredFilter(msg->data.acquired.acquired_info, &vendorCode);
+            AcquiredInfo result = VendorAcquiredFilter(acq, &vendorCode);
             mCb->onAcquired(result, vendorCode);
             break;
         }
         case FINGERPRINT_TEMPLATE_ENROLLING: {
-            if (msg->data.enroll.samples_remaining == 0) {
-                setHbm(false);
+            const int32_t rawFid = static_cast<int32_t>(msg->data.enroll.finger.fid);
+            const int32_t remaining = msg->data.enroll.samples_remaining;
+            if (mStepCaptured.exchange(true, std::memory_order_acq_rel)) {
+                break;
+            }
+            if (rawFid != 0) {
+                mSavedEnrollFid.store(rawFid, std::memory_order_release);
+            }
+            mFingerDown.store(false, std::memory_order_release);
+            setHbm(false);
+            syncFingerUp();
+
+            int32_t reportedFid = 0;
+            if (remaining == 0) {
+                const int32_t saved = mSavedEnrollFid.load(std::memory_order_acquire);
+                reportedFid = (saved != 0) ? saved : (rawFid != 0 ? rawFid : 1);
+                mActive.store(false, std::memory_order_release);
                 sendVendorCmd(kCmdSileadUiReady, 0);
             }
-            mCb->onEnrollmentProgress(msg->data.enroll.finger.fid,
-                                      msg->data.enroll.samples_remaining);
+            ALOGI("notify ENROLLING rawFid=%d reportedFid=%d remaining=%d", rawFid, reportedFid,
+                  remaining);
+            mCb->onEnrollmentProgress(reportedFid, remaining);
             break;
         }
         case FINGERPRINT_TEMPLATE_REMOVED: {
+            mRemovePending.store(false, std::memory_order_release);
             std::vector<int32_t> removed{static_cast<int32_t>(msg->data.removed.finger.fid)};
             mCb->onEnrollmentsRemoved(removed);
             break;
         }
         case FINGERPRINT_AUTHENTICATED: {
+            mFingerDown.store(false, std::memory_order_release);
             setHbm(false);
-            if (msg->data.authenticated.finger.fid != 0) {
+            syncFingerUp();
+            const int32_t fid = static_cast<int32_t>(msg->data.authenticated.finger.fid);
+            ALOGI("notify AUTHENTICATED fid=%d", fid);
+            if (fid != 0) {
+                mActive.store(false, std::memory_order_release);
                 sendVendorCmd(kCmdSileadUiReady, 0);
+                armFodGesture(false);
                 keymaster::HardwareAuthToken authToken{};
                 translate(msg->data.authenticated.hat, authToken);
-                mCb->onAuthenticationSucceeded(msg->data.authenticated.finger.fid, authToken);
+                mCb->onAuthenticationSucceeded(fid, authToken);
                 mLockoutTracker.reset(true);
             } else {
                 mCb->onAuthenticationFailed();
@@ -395,13 +726,23 @@ void Session::notify(const fingerprint_msg_t* msg) {
             break;
         }
         case FINGERPRINT_TEMPLATE_ENUMERATING: {
-            static std::vector<int32_t> enrollments;
-            if (msg->data.enumerated.finger.fid != 0) {
-                enrollments.push_back(static_cast<int32_t>(msg->data.enumerated.finger.fid));
+            const int32_t fid = static_cast<int32_t>(msg->data.enumerated.finger.fid);
+            std::vector<int32_t> snapshot;
+            bool done = false;
+            {
+                std::lock_guard<std::mutex> lock(mEnumMutex);
+                if (fid != 0) {
+                    mEnumeratedIds.push_back(fid);
+                }
+                if (msg->data.enumerated.remaining_templates == 0) {
+                    done = true;
+                    snapshot = mEnumeratedIds;
+                    mEnumeratedIds.clear();
+                }
             }
-            if (msg->data.enumerated.remaining_templates == 0) {
-                mCb->onEnrollmentsEnumerated(enrollments);
-                enrollments.clear();
+            if (done) {
+                mEnumCompleted.store(true, std::memory_order_release);
+                mCb->onEnrollmentsEnumerated(snapshot);
             }
             break;
         }

@@ -35,4 +35,11 @@
 
     <!-- Device uses on-screen navigation bar / gesture navigation -->
     <bool name="config_showNavigationBar">true</bool>
+
+    <!-- Double tap to wake & power/doze/proximity decoupling -->
+    <bool name="config_supportDoubleTapWake">true</bool>
+    <bool name="config_powerDecoupleAutoSuspendModeFromDisplay">true</bool>
+    <bool name="config_powerDecoupleInteractiveModeFromDisplay">true</bool>
+    <bool name="config_suspendWhenScreenOffDueToProximity">true</bool>
+    <bool name="config_dozeAfterScreenOffByDefault">true</bool>
 </resources>

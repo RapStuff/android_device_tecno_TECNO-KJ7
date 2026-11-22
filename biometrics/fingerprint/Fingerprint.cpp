@@ -29,6 +29,14 @@ constexpr uint16_t kVersion = HARDWARE_MODULE_API_VERSION(2, 1);
 
 Fingerprint* sInstance = nullptr;
 
+template <typename Fn>
+Fn resolveSym(void* primary, void* secondary, const char* name) {
+    void* sym = primary ? dlsym(primary, name) : nullptr;
+    if (!sym && secondary) sym = dlsym(secondary, name);
+    if (!sym) sym = dlsym(RTLD_DEFAULT, name);
+    return reinterpret_cast<Fn>(sym);
+}
+
 }  // namespace
 
 Fingerprint::Fingerprint() : mDevice(openHal()) {
@@ -49,24 +57,65 @@ fingerprint_device_t* Fingerprint::openHal() {
         ALOGI("Detected fingerprint sensor vendor: %s", vendorName.c_str());
     }
 
+    const bool isSilead =
+            vendorName.find("silead") != std::string::npos || access("/dev/silead_fp", F_OK) == 0;
     const hw_module_t* hwModule = nullptr;
     const char* libPath = nullptr;
-    if (vendorName.find("silead") != std::string::npos || access("/dev/silead_fp", F_OK) == 0) {
+    if (isSilead) {
         libPath = "/vendor/lib64/hw/fingerprint.silead.default.so";
     } else if (vendorName == "goodix" || access("/dev/goodix_fp", F_OK) == 0) {
         libPath = "/vendor/lib64/hw/gf_fingerprint.default.so";
     }
 
+    void* implHandle = nullptr;
+    if (isSilead) {
+        implHandle = dlopen("/vendor/lib64/libsl_fp_impl.so", RTLD_NOW | RTLD_GLOBAL);
+        if (!implHandle) {
+            ALOGW("dlopen(/vendor/lib64/libsl_fp_impl.so) failed: %s", dlerror());
+        }
+    }
+
+    void* halHandle = nullptr;
     if (libPath) {
-        void* handle = dlopen(libPath, RTLD_NOW);
-        if (handle) {
-            hwModule = reinterpret_cast<const hw_module_t*>(dlsym(handle, "HMI"));
-            mCmdFn = reinterpret_cast<FingerprintCmdFn>(
-                    dlsym(handle, "_Z19fingerprint_commandP18fingerprint_devicejj"));
-            ALOGI("Loaded %s (HMI=%p, cmdFn=%p)", libPath, hwModule, mCmdFn);
+        halHandle = dlopen(libPath, RTLD_NOW | RTLD_GLOBAL);
+        if (halHandle) {
+            hwModule = reinterpret_cast<const hw_module_t*>(dlsym(halHandle, "HMI"));
+            ALOGI("Loaded %s (HMI=%p)", libPath, hwModule);
         } else {
             ALOGW("dlopen(%s) failed: %s", libPath, dlerror());
         }
+    }
+
+    if (isSilead) {
+        mSileadOps.custCmd =
+                resolveSym<int (*)(uint32_t, uint32_t)>(implHandle, halHandle, "silfp_finger_cust_cmd");
+        mSileadOps.setFingerStatusMode = resolveSym<int (*)(int32_t)>(
+                implHandle, halHandle, "silfp_dev_set_finger_status_mode");
+        mSileadOps.custInit =
+                resolveSym<int (*)(void)>(implHandle, halHandle, "silfp_finger_cust_init");
+        mSileadOps.screenStateCallback = resolveSym<int (*)(int32_t)>(
+                implHandle, halHandle, "silfp_worker_screen_state_callback");
+        if (!mSileadOps.screenStateCallback) {
+            mSileadOps.screenStateCallback = resolveSym<int (*)(int32_t)>(
+                    implHandle, halHandle, "silfp_worker_set_screen_state_default");
+        }
+        mSileadOps.syncFingerStatusOptic = resolveSym<int (*)(int32_t)>(
+                implHandle, halHandle, "silfp_impl_sync_finger_status_optic");
+        mSileadOps.devSyncFingerDown =
+                resolveSym<int (*)(void)>(implHandle, halHandle, "silfp_dev_sync_finger_down");
+        mSileadOps.devSyncFingerUp =
+                resolveSym<int (*)(void)>(implHandle, halHandle, "silfp_dev_sync_finger_up");
+        mSileadOps.msgSend =
+                resolveSym<int (*)(int32_t)>(implHandle, halHandle, "silfp_msg_send");
+
+        ALOGI("Silead symbols: custCmd=%p setMode=%p custInit=%p screenCb=%p syncOptic=%p "
+              "syncDown=%p syncUp=%p msgSend=%p",
+              mSileadOps.custCmd, mSileadOps.setFingerStatusMode, mSileadOps.custInit,
+              mSileadOps.screenStateCallback, mSileadOps.syncFingerStatusOptic,
+              mSileadOps.devSyncFingerDown, mSileadOps.devSyncFingerUp, mSileadOps.msgSend);
+    } else if (halHandle) {
+        mSileadOps.fingerprintCmd = resolveSym<int (*)(fingerprint_device_t*, uint32_t, uint32_t)>(
+                halHandle, nullptr, "_Z19fingerprint_commandP18fingerprint_devicejj");
     }
 
     if (!hwModule) {
@@ -94,6 +143,20 @@ fingerprint_device_t* Fingerprint::openHal() {
     }
 
     auto* fpDevice = reinterpret_cast<fingerprint_device_t*>(device);
+
+    if (mSileadOps.setFingerStatusMode) {
+        int ret = mSileadOps.setFingerStatusMode(1);
+        ALOGI("silfp_dev_set_finger_status_mode(1) -> %d", ret);
+    }
+    if (mSileadOps.custInit) {
+        int ret = mSileadOps.custInit();
+        ALOGI("silfp_finger_cust_init() -> %d", ret);
+    }
+    if (mSileadOps.screenStateCallback) {
+        int ret = mSileadOps.screenStateCallback(1);
+        ALOGI("silfp_worker_screen_state_callback(1) -> %d", ret);
+    }
+
     if (!fpDevice->set_notify || fpDevice->set_notify(fpDevice, &Fingerprint::notify) != 0) {
         ALOGE("Failed to register fingerprint notify callback");
         return nullptr;
@@ -189,7 +252,7 @@ ndk::ScopedAStatus Fingerprint::createSession(int32_t /*sensorId*/, int32_t user
         return ndk::ScopedAStatus::fromServiceSpecificError(-1);
     }
 
-    mSession = ndk::SharedRefBase::make<Session>(mDevice, mCmdFn, userId, cb, mLockoutTracker);
+    mSession = ndk::SharedRefBase::make<Session>(mDevice, mSileadOps, userId, cb, mLockoutTracker);
     mSession->linkToDeath(cb->asBinder().get());
     *out = mSession;
     return ndk::ScopedAStatus::ok();

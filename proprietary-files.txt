@@ -2093,6 +2093,7 @@ vendor/lib64/hw/android.hardware.audio@6.0-impl-mediatek.so
 vendor/lib64/hw/android.hardware.audio@7.0-impl-mediatek.so
 vendor/lib64/hw/android.hardware.gnss-impl-mediatek.so
 vendor/lib64/hw/android.hardware.gnss@2.1-impl-mediatek.so
+vendor/lib64/hw/android.hardware.sensors@2.X-subhal-mediatek.so
 vendor/lib64/hw/android.hardware.thermal@2.0-impl.so
 vendor/lib64/hw/audio.bluetooth.default.so
 vendor/lib64/hw/audio.primary.mediatek.so;SYMLINK=vendor/lib64/hw/audio.primary.mt6789.so

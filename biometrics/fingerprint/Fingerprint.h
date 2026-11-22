@@ -31,7 +31,7 @@ class Fingerprint : public BnFingerprint {
     static std::vector<SensorLocation> getSensorLocations();
 
     fingerprint_device_t* mDevice = nullptr;
-    FingerprintCmdFn mCmdFn = nullptr;
+    SileadOps mSileadOps{};
     LockoutTracker mLockoutTracker;
     std::shared_ptr<Session> mSession;
 };

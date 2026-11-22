@@ -98,6 +98,7 @@ class FaceHal {
 
     static void patchSensetimeLicense(void* handle, uintptr_t libBase);
     static void patchCameraId(void* handle, uintptr_t libBase);
+    static void patchImageReader(void* handle, uintptr_t libBase);
     static void patchChallengeCheck(uintptr_t libBase);
 
     face_device_t* mDevice = nullptr;

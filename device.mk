@@ -228,8 +228,13 @@ PRODUCT_COPY_FILES += \
 
 # Sensors
 PRODUCT_PACKAGES += \
+    android.frameworks.sensorservice@1.0.vendor \
     android.hardware.sensors-service.multihal \
-    android.hardware.sensors@2.0-subhal-impl-1.0
+    android.hardware.sensors@1.0.vendor \
+    android.hardware.sensors@2.0-ScopedWakelock.vendor \
+    android.hardware.sensors@2.0.vendor \
+    android.hardware.sensors@2.1.vendor \
+    libsensorndkbridge
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf

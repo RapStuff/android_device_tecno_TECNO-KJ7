@@ -1,3 +1,7 @@
 type silead_fpd_device, dev_type;
 type vibrator_device, dev_type;
+type elliptic_device, dev_type;
 type silead_fpd_data_file, file_type, data_file_type;
+type proc_gesture_function, fs_type, proc_type;
+type proc_fingerprint_status, fs_type, proc_type;
+type sysfs_lcm_hbm, fs_type, sysfs_type;

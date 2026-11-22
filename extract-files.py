@@ -4,6 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+import os
+import struct
+
 from extract_utils.fixups_blob import (
     blob_fixup,
     blob_fixups_user_type,
@@ -23,6 +26,136 @@ namespace_imports = [
     'hardware/mediatek/libion_mtk',
     'hardware/mediatek/libmtkperf_client',
 ]
+
+
+def _parse_elf_sections(elf: bytearray):
+    e_shoff = struct.unpack('<Q', elf[40:48])[0]
+    e_shentsize = struct.unpack('<H', elf[58:60])[0]
+    e_shnum = struct.unpack('<H', elf[60:62])[0]
+    e_shstrndx = struct.unpack('<H', elf[62:64])[0]
+
+    shstr_hdr = e_shoff + e_shstrndx * e_shentsize
+    shstr_offset = struct.unpack('<Q', elf[shstr_hdr + 24 : shstr_hdr + 32])[0]
+
+    sections = {}
+    for i in range(e_shnum):
+        off = e_shoff + i * e_shentsize
+        sh_name, sh_type, _flags, sh_addr, sh_offset, sh_size, sh_link, _info = struct.unpack(
+            '<IIQQQQII', elf[off : off + 48]
+        )
+        name = elf[shstr_offset + sh_name :].split(b'\0')[0].decode('latin1')
+        sections[name] = {
+            'index': i,
+            'name': name,
+            'type': sh_type,
+            'addr': sh_addr,
+            'offset': sh_offset,
+            'size': sh_size,
+            'link': sh_link,
+        }
+    return sections
+
+
+def _find_elf_symbol(elf: bytearray, sections: dict, symbol_name: str):
+    dynsym = sections.get('.dynsym')
+    dynstr = sections.get('.dynstr')
+    if not dynsym or not dynstr:
+        return None, None
+    dynstr_off = dynstr['offset']
+    for off in range(dynsym['offset'], dynsym['offset'] + dynsym['size'], 24):
+        st_name, _info, _other, st_shndx, st_value, _size = struct.unpack(
+            '<IBBHQQ', elf[off : off + 24]
+        )
+        str_start = dynstr_off + st_name
+        str_end = elf.find(b'\0', str_start)
+        if elf[str_start:str_end].decode('latin1') == symbol_name:
+            for sec in sections.values():
+                if sec['index'] == st_shndx:
+                    return st_value, sec['offset'] + (st_value - sec['addr'])
+    return None, None
+
+
+def _find_plt_entry(elf: bytearray, sections: dict, symbol_name: str):
+    rela = sections.get('.rela.plt')
+    dynsym = sections.get('.dynsym')
+    dynstr = sections.get('.dynstr')
+    plt = sections.get('.plt')
+    if not rela or not dynsym or not dynstr or not plt:
+        return None
+    dynstr_off = dynstr['offset']
+    for i, off in enumerate(range(rela['offset'], rela['offset'] + rela['size'], 24)):
+        _r_offset, r_info, _r_addend = struct.unpack('<QQq', elf[off : off + 24])
+        sym_idx = r_info >> 32
+        sym_off = dynsym['offset'] + sym_idx * 24
+        st_name = struct.unpack('<I', elf[sym_off : sym_off + 4])[0]
+        str_start = dynstr_off + st_name
+        str_end = elf.find(b'\0', str_start)
+        if elf[str_start:str_end].decode('latin1') == symbol_name:
+            return plt['addr'] + 32 + i * 16
+    return None
+
+
+def patch_libsl_fp_impl(ctx, file, file_path: str, *args, **kwargs):
+    """Port of Oplus-UDFPS-Bridge-Transsion/patch_libsl_fp.py for AOSP 17 UDFPS."""
+    with open(file_path, 'rb') as f:
+        elf = bytearray(f.read())
+
+    sections = _parse_elf_sections(elf)
+
+    # 1. Bypass netlink FULL_HBM_SET wait in silfp_cust_wait_ui_ready with 5ms usleep + return 0
+    vma_wait_ui, off_wait_ui = _find_elf_symbol(elf, sections, 'silfp_cust_wait_ui_ready')
+    plt_usleep = _find_plt_entry(elf, sections, 'usleep')
+    if not vma_wait_ui or not off_wait_ui or not plt_usleep:
+        raise RuntimeError(f'Missing silfp_cust_wait_ui_ready ({vma_wait_ui}) or usleep@plt ({plt_usleep}) in {file_path}')
+
+    diff = (plt_usleep - (vma_wait_ui + 8)) // 4
+    bl_insn = 0x94000000 | (diff & 0x03ffffff)
+    elf[off_wait_ui : off_wait_ui + 24] = struct.pack(
+        '<6I',
+        0xa9bf7bfd,  # stp x29, x30, [sp, #-16]!
+        0x52827100,  # mov w0, #5000
+        bl_insn,     # bl usleep@plt
+        0x52800000,  # mov w0, #0
+        0xa8c17bfd,  # ldp x29, x30, [sp], #16
+        0xd65f03c0,  # ret
+    )
+
+    # 2, 3, 6, 8, 9. Return 0 immediately in HAL HBM/token/cancel blockers
+    ret0 = struct.pack('<2I', 0x52800000, 0xd65f03c0)
+    for sym in (
+        'silfp_cust_set_hbm_mode',
+        'silfp_cust_restore_hbm',
+        'silfp_impl_verify_enroll_challenge',
+        'silfp_impl_wait_finger_up_with_cancel',
+        'silfp_impl_wait_finger_up_with_cancel_no_action',
+    ):
+        _vma, off = _find_elf_symbol(elf, sections, sym)
+        if not off:
+            raise RuntimeError(f'Missing required symbol {sym} in {file_path}')
+        elf[off : off + 8] = ret0
+
+    # 4 & 5. Skip m_nl_inited branch in silfp_dev_sync_finger_down / up
+    for sym in ('silfp_dev_sync_finger_down', 'silfp_dev_sync_finger_up'):
+        _vma, off = _find_elf_symbol(elf, sections, sym)
+        if not off:
+            raise RuntimeError(f'Missing required symbol {sym} in {file_path}')
+        if elf[off + 12 : off + 16] not in (bytes.fromhex('21010054'), bytes.fromhex('1f2003d5')):
+            raise RuntimeError(f'Unexpected opcode at {sym}+12 in {file_path}: {elf[off+12:off+16].hex()}')
+        elf[off + 12 : off + 16] = bytes.fromhex('1f2003d5')  # nop
+
+    # 7. Force m_finger_status_mode = 1 in silfp_dev_wait_finger_status to use msg pipe
+    _vma, off_wait = _find_elf_symbol(elf, sections, 'silfp_dev_wait_finger_status')
+    if not off_wait:
+        raise RuntimeError(f'Missing silfp_dev_wait_finger_status in {file_path}')
+    for rel in (0x18, 0x5c, 0xf0):
+        insn = struct.unpack('<I', elf[off_wait + rel : off_wait + rel + 4])[0]
+        if insn not in (0xb945c708, 0x52800028):
+            raise RuntimeError(f'Unexpected opcode at silfp_dev_wait_finger_status+0x{rel:x}: 0x{insn:08x}')
+        elf[off_wait + rel : off_wait + rel + 4] = struct.pack('<I', 0x52800028)  # mov w8, #1
+
+    with open(file_path, 'wb') as f:
+        f.write(elf)
+
 
 
 lib_fixups: lib_fixups_user_type = {
@@ -372,9 +505,17 @@ blob_fixups: blob_fixups_user_type = {
     ): blob_fixup()
         .replace_needed('libtinyxml2.so', 'libtinyxml2-v34.so'),
     (
+        'vendor/lib64/hw/android.hardware.sensors@2.X-subhal-mediatek.so',
+    ): blob_fixup()
+        .replace_needed('libutils.so', 'libutils-v32.so'),
+    (
         'vendor/lib64/libwifi-hal-mtk.so',
     ): blob_fixup()
         .fix_soname(),
+    (
+        'vendor/lib64/libsl_fp_impl.so',
+    ): blob_fixup()
+        .call(patch_libsl_fp_impl, need_tmp_dir=False),
     (
         'vendor/etc/init/init.volte_md_status.rc',
     ): blob_fixup()

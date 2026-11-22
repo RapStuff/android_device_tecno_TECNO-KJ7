@@ -9,18 +9,33 @@
 #include <hardware/fingerprint.h>
 
 #include <atomic>
+#include <cstdint>
 #include <memory>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 #include "LockoutTracker.h"
 
 namespace aidl::android::hardware::biometrics::fingerprint::kj7 {
 
-using FingerprintCmdFn = int (*)(fingerprint_device_t*, uint32_t, uint32_t);
+struct SileadOps {
+    int (*fingerprintCmd)(fingerprint_device_t*, uint32_t, uint32_t) = nullptr;
+    int (*custCmd)(uint32_t cmd, uint32_t arg) = nullptr;
+    int (*setFingerStatusMode)(int32_t mode) = nullptr;
+    int (*custInit)(void) = nullptr;
+    int (*screenStateCallback)(int32_t state) = nullptr;
+    int (*syncFingerStatusOptic)(int32_t status) = nullptr;
+    int (*devSyncFingerDown)(void) = nullptr;
+    int (*devSyncFingerUp)(void) = nullptr;
+    int (*msgSend)(int32_t msg) = nullptr;
+};
 
 class Session : public BnSession {
   public:
-    Session(fingerprint_device_t* device, FingerprintCmdFn cmdFn, int32_t userId,
+    Session(fingerprint_device_t* device, SileadOps ops, int32_t userId,
             std::shared_ptr<ISessionCallback> cb, LockoutTracker lockoutTracker);
+    ~Session() override;
 
     ndk::ScopedAStatus generateChallenge() override;
     ndk::ScopedAStatus revokeChallenge(int64_t challenge) override;
@@ -64,22 +79,42 @@ class Session : public BnSession {
     bool checkSensorLockout();
     void clearLockout(bool clearAttemptCounter);
     void startLockoutTimer(int64_t timeoutMs);
+
     void setHbm(bool enable);
+    bool enableHbmAndWait(int32_t timeoutMs);
     void sendVendorCmd(uint32_t cmd, uint32_t arg);
+    void syncFingerDown();
+    void syncFingerUp();
+    void armFodGesture(bool enable);
+    void startScreenOffMonitor();
+    void stopScreenOffMonitor();
 
     static Error VendorErrorFilter(int32_t error, int32_t* vendorCode);
     static AcquiredInfo VendorAcquiredFilter(int32_t info, int32_t* vendorCode);
 
     fingerprint_device_t* mDevice;
-    FingerprintCmdFn mCmdFn;
+    SileadOps mOps;
     LockoutTracker mLockoutTracker;
     int32_t mUserId;
     std::shared_ptr<ISessionCallback> mCb;
     AIBinder_DeathRecipient* mDeathRecipient = nullptr;
 
     std::atomic<bool> mClosed{false};
+    std::atomic<bool> mActive{false};
+    std::atomic<bool> mFingerDown{false};
+    std::atomic<bool> mStepCaptured{false};
+    std::atomic<bool> mEnumCompleted{false};
+    std::atomic<bool> mRemovePending{false};
+    std::atomic<int32_t> mSavedEnrollFid{0};
+    std::atomic<int32_t> mScreenState{1};  // 1 = awake, 0 = off/doze
     std::atomic<bool> mIsLockoutTimerStarted{false};
     std::atomic<bool> mIsLockoutTimerAborted{false};
+
+    std::mutex mEnumMutex;
+    std::vector<int32_t> mEnumeratedIds;
+
+    std::atomic<bool> mMonitorStop{false};
+    std::thread mMonitorThread;
 };
 
 }  // namespace aidl::android::hardware::biometrics::fingerprint::kj7

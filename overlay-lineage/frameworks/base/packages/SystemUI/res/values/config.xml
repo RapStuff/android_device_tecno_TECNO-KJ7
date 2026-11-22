@@ -2,4 +2,7 @@
 <resources>
     <!-- Match the stock quick-settings offset above the centered cutout. -->
     <dimen name="qs_header_system_icons_area_height">48dp</dimen>
+
+    <!-- Doze: support STATE_DOZE -->
+    <bool name="doze_display_state_supported">true</bool>
 </resources>
