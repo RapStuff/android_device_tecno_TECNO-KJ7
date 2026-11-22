@@ -109,6 +109,7 @@ PRODUCT_PACKAGES += \
     libhidlbase_shim \
     libprocessgroup_shim \
     libstagefright_foundation-v33 \
+    libtinyxml2-v34 \
     libutils-v32
 
 # Lights

@@ -128,6 +128,11 @@ blob_fixups: blob_fixups_user_type = {
     (
         'vendor/lib/mt6789/libaalservice.so',
         'vendor/lib64/mt6789/libaalservice.so',
+    ): blob_fixup()
+        .replace_needed('libsensorndkbridge.so', 'android.hardware.sensors@1.0-convert-shared.so')
+        .replace_needed('libhidlbase.so', 'libhidlbase-v32.so')
+        .replace_needed('libutils.so', 'libutils-v32.so'),
+    (
         'vendor/lib64/mt6789/libcam.utils.sensorprovider.so',
     ): blob_fixup()
         .replace_needed('libsensorndkbridge.so', 'android.hardware.sensors@1.0-convert-shared.so'),
@@ -181,10 +186,31 @@ blob_fixups: blob_fixups_user_type = {
         .clear_symbol_version('AHardwareBuffer_unlock'),
     (
         'vendor/bin/hw/vendor.mediatek.hardware.pq@2.2-service',
+    ): blob_fixup()
+        .replace_needed('libhidlbase.so', 'libhidlbase-v32.so')
+        .replace_needed('libutils.so', 'libutils-v32.so'),
+    (
         'vendor/lib/hw/mt6789/vendor.mediatek.hardware.pq@2.15-impl.so',
         'vendor/lib64/hw/mt6789/vendor.mediatek.hardware.pq@2.15-impl.so',
     ): blob_fixup()
-        .replace_needed('libhidlbase.so', 'libhidlbase-v32.so'),
+        .replace_needed('libhidlbase.so', 'libhidlbase-v32.so')
+        .replace_needed('libutils.so', 'libutils-v32.so')
+        .replace_needed('libtinyxml2.so', 'libtinyxml2-v34.so'),
+    (
+        'vendor/lib/mt6789/libpq_prot.so',
+        'vendor/lib64/mt6789/libpq_prot.so',
+    ): blob_fixup()
+        .replace_needed('libutils.so', 'libutils-v32.so'),
+    (
+        'vendor/bin/dconfig',
+        'vendor/lib/librt_extamp_intf.so',
+        'vendor/lib64/librt_extamp_intf.so',
+        'vendor/lib/libpowerhal.so',
+        'vendor/lib64/libpowerhal.so',
+        'vendor/lib/hw/audio.primary.mediatek.so',
+        'vendor/lib64/hw/audio.primary.mediatek.so',
+    ): blob_fixup()
+        .replace_needed('libtinyxml2.so', 'libtinyxml2-v34.so'),
     (
         'vendor/etc/init/init.volte_md_status.rc',
     ): blob_fixup()
