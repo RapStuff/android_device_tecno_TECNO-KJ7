@@ -61,3 +61,5 @@ init_daemon_domain(tran_tinymix)
 type aeev, domain;
 type aeev_exec, exec_type, vendor_file_type, file_type;
 init_daemon_domain(aeev)
+
+allow vendor_init mtk_radio_device:lnk_file unlink;

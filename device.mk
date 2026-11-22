@@ -40,7 +40,6 @@ PRODUCT_SOONG_NAMESPACES += \
 
 # Audio
 PRODUCT_PACKAGES += \
-    android.hardware.audio@7.0-impl \
     android.hardware.audio.effect@7.0-impl \
     android.hardware.audio.service.mediatek \
     audio.bluetooth.default \
@@ -192,7 +191,6 @@ PRODUCT_PACKAGES += \
     android.hardware.power-service.lineage-libperfmgr \
     libmtkperf_client_vendor \
     libmtkperf_client \
-    libperfctl_vendor \
     vendor.mediatek.hardware.mtkpower@1.2-service.stub
 
 PRODUCT_COPY_FILES += \

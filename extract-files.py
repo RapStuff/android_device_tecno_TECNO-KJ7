@@ -181,6 +181,8 @@ blob_fixups: blob_fixups_user_type = {
         .clear_symbol_version('AHardwareBuffer_unlock'),
     (
         'vendor/bin/hw/vendor.mediatek.hardware.pq@2.2-service',
+        'vendor/lib/hw/mt6789/vendor.mediatek.hardware.pq@2.15-impl.so',
+        'vendor/lib64/hw/mt6789/vendor.mediatek.hardware.pq@2.15-impl.so',
     ): blob_fixup()
         .replace_needed('libhidlbase.so', 'libhidlbase-v32.so'),
     (
