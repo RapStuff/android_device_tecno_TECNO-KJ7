@@ -13,7 +13,8 @@
 using aidl::android::hardware::biometrics::fingerprint::kj7::Fingerprint;
 
 int main() {
-    ABinderProcess_setThreadPoolMaxThreadCount(0);
+    ABinderProcess_setThreadPoolMaxThreadCount(4);
+    ABinderProcess_startThreadPool();
 
     auto fingerprint = ndk::SharedRefBase::make<Fingerprint>();
     const std::string instance = std::string() + Fingerprint::descriptor + "/default";

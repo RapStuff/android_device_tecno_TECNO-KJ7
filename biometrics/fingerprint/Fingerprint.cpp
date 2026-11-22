@@ -132,7 +132,7 @@ fingerprint_device_t* Fingerprint::openHal() {
     }
 
     hw_device_t* device = nullptr;
-    int err = hwModule->methods->open(hwModule, nullptr, &device);
+    int err = hwModule->methods->open(hwModule, FINGERPRINT_HARDWARE_MODULE_ID, &device);
     if (err != 0 || !device) {
         ALOGE("Fingerprint open() failed: %d", err);
         return nullptr;

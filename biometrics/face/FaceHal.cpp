@@ -6,6 +6,8 @@
 
 #include "FaceHal.h"
 
+#include <aidl/android/hardware/biometrics/face/AcquiredInfo.h>
+
 #include <android-base/file.h>
 #include <android/dlext.h>
 #include <dlfcn.h>
@@ -32,6 +34,7 @@ constexpr int32_t kFaceMsgTemplateEnumerating = 5;
 
 constexpr const char* kFaceDataDir = "/data/vendor_de/0/facedata";
 constexpr const char* kTemplatePath = "/data/vendor_de/0/facedata/template_file.data";
+constexpr const char* kOcularFeaturePath = "/data/vendor_de/0/facedata/feature_ocular.txt";
 constexpr const char* kYuvPath = "/data/vendor_de/0/facedata/faceIdEnroll.yuv";
 constexpr const char* kYuvTmpPath = "/data/vendor_de/0/facedata/faceIdEnroll.tmp";
 constexpr int kFrameWidth = 640;
@@ -513,16 +516,44 @@ int FaceHal::enroll(const keymaster::HardwareAuthToken& hat, uint32_t timeoutSec
 }
 
 int FaceHal::authenticate(uint64_t operationId) {
+    {
+        std::lock_guard<std::mutex> lock(mOpMutex);
+        if (mLastCancelTime.time_since_epoch().count() != 0) {
+            const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - mLastCancelTime);
+            if (elapsed.count() < 150) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(150) - elapsed);
+            }
+        }
+    }
     mActive.store(true, std::memory_order_release);
+    setSensetimeOrientation(8);
+    // face_pre_enroll clears face.default.so's cached mFaceId; re-enumerate to repopulate it.
+    if (mDevice && mDevice->enumerate) {
+        mDevice->enumerate(mDevice);
+    }
     if (!mDevice || !mDevice->authenticate) return -1;
-    return mDevice->authenticate(mDevice, operationId);
+    int ret = mDevice->authenticate(mDevice, operationId);
+    if (ret != 0) {
+        ALOGW("authenticate(op=0x%llx) failed (%d), retrying after camera release",
+              static_cast<unsigned long long>(operationId), ret);
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        setSensetimeOrientation(8);
+        ret = mDevice->authenticate(mDevice, operationId);
+    }
+    return ret;
 }
 
 int FaceHal::cancel() {
     mActive.store(false, std::memory_order_release);
     stopEnrollCamera();
     if (!mDevice || !mDevice->cancel) return 0;
-    return mDevice->cancel(mDevice);
+    int ret = mDevice->cancel(mDevice);
+    {
+        std::lock_guard<std::mutex> lock(mOpMutex);
+        mLastCancelTime = std::chrono::steady_clock::now();
+    }
+    return ret;
 }
 
 int FaceHal::enumerate() {
@@ -546,6 +577,68 @@ int FaceHal::resetLockout(const keymaster::HardwareAuthToken& hat) {
     if (!mDevice || !mDevice->reset_lockout) return 0;
     RawFaceHat raw = toRawHat(hat);
     return mDevice->reset_lockout(mDevice, &raw);
+}
+
+std::vector<Feature> FaceHal::getFeatures() {
+    std::vector<Feature> enabledFeatures;
+    bool ocularEnabled = false;
+    const auto enrolled = parseEnrolledFaceIds();
+    const int32_t faceId = enrolled.empty() ? 0 : enrolled.front();
+
+    if (mDevice && mDevice->get_feature && faceId > 0) {
+        int ret = mDevice->get_feature(
+                mDevice, static_cast<int32_t>(Feature::REQUIRE_ATTENTION), faceId, &ocularEnabled);
+        ALOGI("get_feature(REQUIRE_ATTENTION, fid=%d) -> ret=%d enabled=%d",
+              faceId, ret, ocularEnabled ? 1 : 0);
+        if (ret == 0) {
+            if (ocularEnabled) {
+                enabledFeatures.push_back(Feature::REQUIRE_ATTENTION);
+            }
+            return enabledFeatures;
+        }
+    }
+
+    // Fallback: face.default.so defaults to eye-open check enabled when feature_ocular.txt is absent.
+    std::ifstream ifs(kOcularFeaturePath, std::ios::binary);
+    if (ifs.is_open()) {
+        char ch = '0';
+        ifs.get(ch);
+        ocularEnabled = (ch == '1');
+    } else {
+        ocularEnabled = true;
+    }
+    if (ocularEnabled) {
+        enabledFeatures.push_back(Feature::REQUIRE_ATTENTION);
+    }
+    return enabledFeatures;
+}
+
+bool FaceHal::setFeature(Feature feature, bool enabled,
+                         const keymaster::HardwareAuthToken& hat) {
+    if (feature != Feature::REQUIRE_ATTENTION) {
+        return false;
+    }
+    const auto enrolled = parseEnrolledFaceIds();
+    const int32_t faceId = enrolled.empty() ? 0 : enrolled.front();
+    RawFaceHat raw = toRawHat(hat);
+    int ret = -1;
+    if (mDevice && mDevice->set_feature) {
+        ret = mDevice->set_feature(mDevice, static_cast<int32_t>(feature), enabled, &raw, faceId);
+        ALOGI("set_feature(REQUIRE_ATTENTION, enabled=%d, fid=%d) -> %d",
+              enabled ? 1 : 0, faceId, ret);
+    }
+    if (ret != 0 && (hat.challenge != 0 || hat.userId != 0)) {
+        ensureDir(kFaceDataDir);
+        std::ofstream ofs(kOcularFeaturePath, std::ios::binary | std::ios::trunc);
+        if (ofs.is_open()) {
+            ofs << (enabled ? '1' : '0');
+            ofs.close();
+            ret = ofs.good() ? 0 : -1;
+            ALOGW("set_feature synced %s='%c' (ret=%d)",
+                  kOcularFeaturePath, enabled ? '1' : '0', ret);
+        }
+    }
+    return ret == 0;
 }
 
 void FaceHal::attachPreviewWindow(ANativeWindow* window) {
@@ -686,27 +779,25 @@ void FaceHal::onNotify(const FaceMsg* msg) {
     switch (msg->type) {
         case kFaceMsgAuthenticated: {
             mActive.store(false, std::memory_order_release);
+            // face.default.so only emits kFaceMsgAuthenticated on st_auth_unlock == 201,
+            // yet face_pre_enroll clears mFaceId and face_authenticate never refreshes it.
             int32_t fid = msg->faceIdOrError;
-            if (fid != 0) {
-                auto enrolled = parseEnrolledFaceIds();
-                if (!enrolled.empty() &&
-                    std::find(enrolled.begin(), enrolled.end(), fid) == enrolled.end()) {
-                    fid = enrolled.front();
-                }
-                RawFaceHat raw{};
-                std::memcpy(&raw, msg->extra, sizeof(raw));
-                keymaster::HardwareAuthToken hat{};
-                hat.challenge = static_cast<int64_t>(raw.challenge);
-                hat.userId = static_cast<int64_t>(raw.userId);
-                hat.authenticatorId = static_cast<int64_t>(raw.authenticatorId);
-                hat.authenticatorType =
-                        static_cast<keymaster::HardwareAuthenticatorType>(raw.authenticatorType);
-                hat.timestamp.milliSeconds = static_cast<int64_t>(raw.timestamp);
-                hat.mac.assign(raw.hmac, raw.hmac + sizeof(raw.hmac));
-                cb->onAuthenticationSucceeded(fid, hat);
-            } else {
-                cb->onAuthenticationFailed();
+            auto enrolled = parseEnrolledFaceIds();
+            if (fid <= 0 || (!enrolled.empty() &&
+                std::find(enrolled.begin(), enrolled.end(), fid) == enrolled.end())) {
+                fid = enrolled.empty() ? 1 : enrolled.front();
             }
+            RawFaceHat raw{};
+            std::memcpy(&raw, msg->extra, sizeof(raw));
+            keymaster::HardwareAuthToken hat{};
+            hat.challenge = static_cast<int64_t>(raw.challenge);
+            hat.userId = static_cast<int64_t>(raw.userId);
+            hat.authenticatorId = static_cast<int64_t>(raw.authenticatorId);
+            hat.authenticatorType =
+                    static_cast<keymaster::HardwareAuthenticatorType>(raw.authenticatorType);
+            hat.timestamp.milliSeconds = static_cast<int64_t>(raw.timestamp);
+            hat.mac.assign(raw.hmac, raw.hmac + sizeof(raw.hmac));
+            cb->onAuthenticationSucceeded(fid, hat);
             break;
         }
         case kFaceMsgTemplateEnrolling: {
@@ -741,7 +832,33 @@ void FaceHal::onNotify(const FaceMsg* msg) {
             }
             break;
         }
-        case kFaceMsgAcquired:
+        case kFaceMsgAcquired: {
+            const int32_t code = msg->faceIdOrError;
+            BaseFrame frame{};
+            if (code == 0 || code == 20) {
+                frame.acquiredInfo = AcquiredInfo::START;
+            } else if (code >= 1 && code <= 24 && code != 22) {
+                frame.acquiredInfo = static_cast<AcquiredInfo>(code);
+            } else if (code >= 1000) {
+                frame.acquiredInfo = AcquiredInfo::VENDOR;
+                frame.vendorCode = code - 1000;
+            } else if (code > 0) {
+                frame.acquiredInfo = AcquiredInfo::VENDOR;
+                frame.vendorCode = code;
+            } else {
+                break;
+            }
+            if (mCameraActive.load(std::memory_order_acquire)) {
+                EnrollmentFrame ef{};
+                ef.data = frame;
+                cb->onEnrollmentFrame(ef);
+            } else {
+                AuthenticationFrame af{};
+                af.data = frame;
+                cb->onAuthenticationFrame(af);
+            }
+            break;
+        }
         case kFaceMsgTemplateRemoved:
         case kFaceMsgTemplateEnumerating:
         default:

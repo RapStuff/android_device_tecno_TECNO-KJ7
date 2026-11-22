@@ -93,6 +93,7 @@ ndk::ScopedAStatus Session::detectInteraction(
 }
 
 ndk::ScopedAStatus Session::enumerateEnrollments() {
+    mHal->enumerate();
     auto ids = parseEnrolledFaceIds();
     mCb->onEnrollmentsEnumerated(ids);
     return ndk::ScopedAStatus::ok();
@@ -132,12 +133,16 @@ ndk::ScopedAStatus Session::removeEnrollments(const std::vector<int32_t>& enroll
 }
 
 ndk::ScopedAStatus Session::getFeatures() {
-    mCb->onFeaturesRetrieved({});
+    mCb->onFeaturesRetrieved(mHal->getFeatures());
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus Session::setFeature(const keymaster::HardwareAuthToken& /*hat*/, Feature feature,
-                                       bool /*enabled*/) {
+ndk::ScopedAStatus Session::setFeature(const keymaster::HardwareAuthToken& hat, Feature feature,
+                                       bool enabled) {
+    if (!mHal->setFeature(feature, enabled, hat)) {
+        mCb->onError(Error::UNABLE_TO_PROCESS, 0);
+        return ndk::ScopedAStatus::ok();
+    }
     mCb->onFeatureSet(feature);
     return ndk::ScopedAStatus::ok();
 }

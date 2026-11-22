@@ -272,16 +272,28 @@ void Session::stopScreenOffMonitor() {
 }
 
 ndk::ScopedAStatus Session::generateChallenge() {
-    uint64_t challenge = (mDevice && mDevice->pre_enroll) ? mDevice->pre_enroll(mDevice) : 0;
-    mCb->onChallengeGenerated(static_cast<int64_t>(challenge));
+    auto self = ref<Session>();
+    std::thread([self]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (self->isClosed()) return;
+        uint64_t challenge = (self->mDevice && self->mDevice->pre_enroll)
+                                     ? self->mDevice->pre_enroll(self->mDevice)
+                                     : 0;
+        self->mCb->onChallengeGenerated(static_cast<int64_t>(challenge));
+    }).detach();
     return ndk::ScopedAStatus::ok();
 }
 
 ndk::ScopedAStatus Session::revokeChallenge(int64_t challenge) {
-    if (mDevice && mDevice->post_enroll) {
-        mDevice->post_enroll(mDevice);
-    }
-    mCb->onChallengeRevoked(challenge);
+    auto self = ref<Session>();
+    std::thread([self, challenge]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (self->isClosed()) return;
+        if (self->mDevice && self->mDevice->post_enroll) {
+            self->mDevice->post_enroll(self->mDevice);
+        }
+        self->mCb->onChallengeRevoked(challenge);
+    }).detach();
     return ndk::ScopedAStatus::ok();
 }
 
@@ -341,70 +353,89 @@ ndk::ScopedAStatus Session::detectInteraction(std::shared_ptr<common::ICancellat
 }
 
 ndk::ScopedAStatus Session::enumerateEnrollments() {
-    {
-        std::lock_guard<std::mutex> lock(mEnumMutex);
-        mEnumeratedIds.clear();
-    }
-    mEnumCompleted.store(false, std::memory_order_release);
-
-    int err = (mDevice && mDevice->enumerate) ? mDevice->enumerate(mDevice) : -1;
-    if (err != 0) {
-        ALOGE("enumerate failed: %d", err);
-        mEnumCompleted.store(true, std::memory_order_release);
-        mCb->onEnrollmentsEnumerated({});
-        return ndk::ScopedAStatus::ok();
-    }
-
-    // Silead does not always invoke callback when database is empty; wait briefly then fall back.
-    for (int i = 0; i < 10; ++i) {
-        if (mEnumCompleted.load(std::memory_order_acquire)) {
-            return ndk::ScopedAStatus::ok();
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-    if (!mEnumCompleted.exchange(true, std::memory_order_acq_rel)) {
-        std::vector<int32_t> snapshot;
+    auto self = ref<Session>();
+    std::thread([self]() {
         {
-            std::lock_guard<std::mutex> lock(mEnumMutex);
-            snapshot = mEnumeratedIds;
+            std::lock_guard<std::mutex> lock(self->mEnumMutex);
+            self->mEnumeratedIds.clear();
         }
-        mCb->onEnrollmentsEnumerated(snapshot);
-    }
+        self->mEnumCompleted.store(false, std::memory_order_release);
+
+        int err = (self->mDevice && self->mDevice->enumerate)
+                          ? self->mDevice->enumerate(self->mDevice)
+                          : -1;
+        if (err != 0) {
+            ALOGE("enumerate failed: %d", err);
+            self->mEnumCompleted.store(true, std::memory_order_release);
+            if (!self->isClosed()) self->mCb->onEnrollmentsEnumerated({});
+            return;
+        }
+
+        // Silead does not always invoke callback when database is empty; wait briefly then fall back.
+        for (int i = 0; i < 10; ++i) {
+            if (self->mEnumCompleted.load(std::memory_order_acquire) || self->isClosed()) {
+                return;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        if (!self->mEnumCompleted.exchange(true, std::memory_order_acq_rel) && !self->isClosed()) {
+            std::vector<int32_t> snapshot;
+            {
+                std::lock_guard<std::mutex> lock(self->mEnumMutex);
+                snapshot = self->mEnumeratedIds;
+            }
+            self->mCb->onEnrollmentsEnumerated(snapshot);
+        }
+    }).detach();
     return ndk::ScopedAStatus::ok();
 }
 
 ndk::ScopedAStatus Session::removeEnrollments(const std::vector<int32_t>& enrollmentIds) {
-    if (!mDevice || !mDevice->remove) {
-        mCb->onEnrollmentsRemoved({});
-        return ndk::ScopedAStatus::ok();
-    }
-    mRemovePending.store(true, std::memory_order_release);
-    for (int32_t fid : enrollmentIds) {
-        int err = mDevice->remove(mDevice, mUserId, fid);
-        if (err != 0) {
-            ALOGE("remove(fid=%d) failed: %d", fid, err);
+    auto self = ref<Session>();
+    std::vector<int32_t> ids = enrollmentIds;
+    std::thread([self, ids = std::move(ids)]() {
+        if (!self->mDevice || !self->mDevice->remove) {
+            if (!self->isClosed()) self->mCb->onEnrollmentsRemoved({});
+            return;
         }
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
-    if (mRemovePending.exchange(false, std::memory_order_acq_rel)) {
-        mCb->onEnrollmentsRemoved(enrollmentIds);
-    }
+        self->mRemovePending.store(true, std::memory_order_release);
+        for (int32_t fid : ids) {
+            int err = self->mDevice->remove(self->mDevice, self->mUserId, fid);
+            if (err != 0) {
+                ALOGE("remove(fid=%d) failed: %d", fid, err);
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        if (self->mRemovePending.exchange(false, std::memory_order_acq_rel) && !self->isClosed()) {
+            self->mCb->onEnrollmentsRemoved(ids);
+        }
+    }).detach();
     return ndk::ScopedAStatus::ok();
 }
 
 ndk::ScopedAStatus Session::getAuthenticatorId() {
-    uint64_t authId = (mDevice && mDevice->get_authenticator_id)
-                              ? mDevice->get_authenticator_id(mDevice)
-                              : 0;
-    mCb->onAuthenticatorIdRetrieved(static_cast<int64_t>(authId));
+    auto self = ref<Session>();
+    std::thread([self]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (self->isClosed()) return;
+        uint64_t authId = (self->mDevice && self->mDevice->get_authenticator_id)
+                                  ? self->mDevice->get_authenticator_id(self->mDevice)
+                                  : 0;
+        self->mCb->onAuthenticatorIdRetrieved(static_cast<int64_t>(authId));
+    }).detach();
     return ndk::ScopedAStatus::ok();
 }
 
 ndk::ScopedAStatus Session::invalidateAuthenticatorId() {
-    uint64_t authId = (mDevice && mDevice->get_authenticator_id)
-                              ? mDevice->get_authenticator_id(mDevice)
-                              : 0;
-    mCb->onAuthenticatorIdInvalidated(static_cast<int64_t>(authId));
+    auto self = ref<Session>();
+    std::thread([self]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (self->isClosed()) return;
+        uint64_t authId = (self->mDevice && self->mDevice->get_authenticator_id)
+                                  ? self->mDevice->get_authenticator_id(self->mDevice)
+                                  : 0;
+        self->mCb->onAuthenticatorIdInvalidated(static_cast<int64_t>(authId));
+    }).detach();
     return ndk::ScopedAStatus::ok();
 }
 
@@ -436,8 +467,8 @@ ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t x, int3
         return ndk::ScopedAStatus::ok();
     }
 
-    // 5ms settle after HBM confirmation (matches silfp_cust_wait_ui_ready patch)
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    // Settle after HBM confirmation before Silead wait_ui_ready (30ms) + optical exposure.
+    std::this_thread::sleep_for(std::chrono::milliseconds(15));
     if (!mFingerDown.load(std::memory_order_acquire) || !mActive.load(std::memory_order_acquire)) {
         setHbm(false);
         return ndk::ScopedAStatus::ok();
@@ -546,13 +577,17 @@ ndk::ScopedAStatus Session::close() {
         syncFingerUp();
         sendVendorCmd(kCmdSileadUiReady, 0);
         armFodGesture(false);
-        if (mCb) {
-            mCb->onSessionClosed();
-        }
         if (mDeathRecipient) {
             AIBinder_DeathRecipient_delete(mDeathRecipient);
             mDeathRecipient = nullptr;
         }
+        auto cb = mCb;
+        std::thread([cb]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            if (cb) {
+                cb->onSessionClosed();
+            }
+        }).detach();
     }
     return ndk::ScopedAStatus::ok();
 }

@@ -1,0 +1,3 @@
+# FocalTech FT3683G touch / gesture keylayout for TECNO KJ7
+# Map double-tap gesture KEY_F13 (183) to Android WAKEUP so DT2W wakes screen.
+key 183   WAKEUP

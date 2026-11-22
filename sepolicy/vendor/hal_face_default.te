@@ -40,6 +40,7 @@ allow hal_face_default tee_device:chr_file rw_file_perms;
 allow hal_face_default tkcore_admin_device:chr_file rw_file_perms;
 allow hal_face_default debugfs_ion:dir search;
 allow hal_face_default proc_ged:file rw_file_perms;
+allowxperm hal_face_default proc_ged:file ioctl { 0x6700-0x67ff };
 allow hal_face_default proc_perfmgr:dir r_dir_perms;
 allow hal_face_default proc_perfmgr:file rw_file_perms;
 

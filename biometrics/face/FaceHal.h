@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include <aidl/android/hardware/biometrics/face/Feature.h>
 #include <aidl/android/hardware/biometrics/face/ISessionCallback.h>
 #include <aidl/android/hardware/keymaster/HardwareAuthToken.h>
 #include <hardware/hardware.h>
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <memory>
@@ -80,6 +82,8 @@ class FaceHal {
     int remove(uint32_t faceId);
     uint64_t getAuthenticatorId();
     int resetLockout(const keymaster::HardwareAuthToken& hat);
+    std::vector<Feature> getFeatures();
+    bool setFeature(Feature feature, bool enabled, const keymaster::HardwareAuthToken& hat);
 
     void attachPreviewWindow(ANativeWindow* window);
     void attachPreviewToken(const std::vector<int32_t>& ints);
@@ -113,6 +117,8 @@ class FaceHal {
 
     std::mutex mIdsMutex;
     std::vector<int32_t> mExistingFaceIds;
+    std::mutex mOpMutex;
+    std::chrono::steady_clock::time_point mLastCancelTime{};
 
     SurfaceBridge mSurfaceBridge;
 

@@ -102,7 +102,7 @@ def patch_libsl_fp_impl(ctx, file, file_path: str, *args, **kwargs):
 
     sections = _parse_elf_sections(elf)
 
-    # 1. Bypass netlink FULL_HBM_SET wait in silfp_cust_wait_ui_ready with 5ms usleep + return 0
+    # 1. Bypass netlink FULL_HBM_SET wait in silfp_cust_wait_ui_ready with 30ms usleep + return 0
     vma_wait_ui, off_wait_ui = _find_elf_symbol(elf, sections, 'silfp_cust_wait_ui_ready')
     plt_usleep = _find_plt_entry(elf, sections, 'usleep')
     if not vma_wait_ui or not off_wait_ui or not plt_usleep:
@@ -113,7 +113,7 @@ def patch_libsl_fp_impl(ctx, file, file_path: str, *args, **kwargs):
     elf[off_wait_ui : off_wait_ui + 24] = struct.pack(
         '<6I',
         0xa9bf7bfd,  # stp x29, x30, [sp, #-16]!
-        0x52827100,  # mov w0, #5000
+        0x528ea600,  # mov w0, #30000
         bl_insn,     # bl usleep@plt
         0x52800000,  # mov w0, #0
         0xa8c17bfd,  # ldp x29, x30, [sp], #16

@@ -239,6 +239,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf
 
+# Input keylayout (DT2W)
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/configs/keylayout/mtk-tpd.kl:$(TARGET_COPY_OUT_VENDOR)/usr/keylayout/mtk-tpd.kl
+
 # USB
 PRODUCT_PACKAGES += \
     android.hardware.usb-service.mediatek \
