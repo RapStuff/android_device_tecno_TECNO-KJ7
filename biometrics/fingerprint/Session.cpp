@@ -221,15 +221,23 @@ bool Session::enableHbmAndWait(int32_t timeoutMs) {
     setHbm(true);
     auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
     std::string state;
+    bool wakeTriggered = false;
     while (std::chrono::steady_clock::now() < deadline) {
         if (!mFingerDown.load(std::memory_order_acquire) ||
             !mActive.load(std::memory_order_acquire)) {
             setHbm(false);
             return false;
         }
-        if (::android::base::ReadFileToString(kLcmHbmPath, &state) &&
-            (state.find("0xOK") != std::string::npos || state == "1\n" || state == "1")) {
-            return true;
+        if (::android::base::ReadFileToString(kLcmHbmPath, &state)) {
+            if (state.find("0xOK") != std::string::npos || state == "1\n" || state == "1") {
+                return true;
+            }
+            // MediaTek tran_lcm_hbm_set returns 0xFA when panel is asleep or in DRM doze
+            // (dsi->is_doze == true). Ensure the display exits doze/sleep to allow HBM.
+            if (!wakeTriggered && state.find("0xFA") != std::string::npos) {
+                wakeTriggered = true;
+                wakeDisplayPipeline();
+            }
         }
         setHbm(true);
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -327,7 +335,10 @@ void Session::startScreenOffMonitor() {
                                 }
                             }
                             if (isInsideFodArea(tx, ty)) {
-                                if (!isDisplayDpmsOn()) {
+                                // In AOD/Doze, DRM DPMS stays "On" while dsi->is_doze is true,
+                                // causing lcm_hbm_state to reject with 0xFA until woken to awake.
+                                if (!isDisplayDpmsOn() ||
+                                    mScreenState.load(std::memory_order_acquire) != 1) {
                                     wakeDisplayPipeline();
                                 }
                                 acquireFodWakelock(true);
@@ -566,7 +577,7 @@ ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t x, int3
     ALOGI("onPointerDown(%d, %d) -> enabling HBM and triggering Silead capture", x, y);
     mCb->onAcquired(AcquiredInfo::START, 0);
 
-    const int32_t hbmWaitMs = (mScreenState.load(std::memory_order_acquire) == 1) ? 250 : 500;
+    const int32_t hbmWaitMs = (mScreenState.load(std::memory_order_acquire) == 1) ? 250 : 800;
     enableHbmAndWait(hbmWaitMs);
     if (!mFingerDown.load(std::memory_order_acquire) || !mActive.load(std::memory_order_acquire)) {
         setHbm(false);
@@ -633,9 +644,10 @@ ndk::ScopedAStatus Session::onContextChanged(const common::OperationContext& con
     const bool isAodOrOff = (context.displayState == common::DisplayState::AOD ||
                              context.displayState == common::DisplayState::NO_UI ||
                              context.displayState == common::DisplayState::SCREENSAVER);
-    const int32_t newState = (context.displayState == common::DisplayState::AOD)     ? 2
-                           : (context.displayState == common::DisplayState::NO_UI)   ? 0
-                                                                                     : 1;
+    const int32_t newState = (context.displayState == common::DisplayState::AOD ||
+                              context.displayState == common::DisplayState::SCREENSAVER) ? 2
+                           : (context.displayState == common::DisplayState::NO_UI)      ? 0
+                                                                                        : 1;
     const int32_t vendorScreenState = (newState == 0) ? 0 : 1;
     mScreenState.store(newState, std::memory_order_release);
     if (mOps.screenStateCallback) {

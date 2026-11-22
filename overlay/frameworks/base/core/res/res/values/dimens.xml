@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- Curved 6.78" AMOLED (1080x2436, 480dpi / 3px per dp) corner & edge insets -->
+    <dimen name="rounded_corner_radius">28dp</dimen>
+    <dimen name="rounded_corner_radius_top">28dp</dimen>
+    <dimen name="rounded_corner_radius_bottom">28dp</dimen>
+    <dimen name="rounded_corner_content_padding">18dp</dimen>
+</resources>

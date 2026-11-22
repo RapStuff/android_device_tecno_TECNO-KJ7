@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- Padding outside 182x182px FOD sensor bounds for enrollment progress ring -->
+    <integer name="config_udfpsEnrollProgressBar" translatable="false">70</integer>
+</resources>

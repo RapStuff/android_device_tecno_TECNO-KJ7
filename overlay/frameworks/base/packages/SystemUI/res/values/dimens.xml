@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- Physical display pitch in microns/px: 25400 / 392.805 dpi = 64.66 um/px -->
+    <item name="pixel_pitch" format="float" type="dimen">64.66</item>
+</resources>
