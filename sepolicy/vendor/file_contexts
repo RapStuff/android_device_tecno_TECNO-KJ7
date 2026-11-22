@@ -32,3 +32,8 @@
 /(vendor|system/vendor)/bin/tran_tinymix                                                          u:object_r:tran_tinymix_exec:s0
 /(vendor|system/vendor)/bin/aeev_v2                                                               u:object_r:aeev_exec:s0
 /dev/socket/bip_socket                                                                            u:object_r:bip_socket:s0
+
+# SP-HAL compat shims and gralloc.common loaded via sphal namespace
+/(vendor|system/vendor)/lib(64)?/libutils-v32\.so                                                 u:object_r:same_process_hal_file:s0
+/(vendor|system/vendor)/lib(64)?/libprocessgroup_shim\.so                                         u:object_r:same_process_hal_file:s0
+/(vendor|system/vendor)/lib(64)?/hw/(mt[0-9]+[a-z]*/)?gralloc\.common\.so                         u:object_r:same_process_hal_file:s0
