@@ -135,7 +135,22 @@ blob_fixups: blob_fixups_user_type = {
     (
         'vendor/lib64/mt6789/libcam.utils.sensorprovider.so',
     ): blob_fixup()
-        .replace_needed('libsensorndkbridge.so', 'android.hardware.sensors@1.0-convert-shared.so'),
+        .replace_needed('libsensorndkbridge.so', 'android.hardware.sensors@1.0-convert-shared.so')
+        .replace_needed('libutils.so', 'libutils-v32.so'),
+    (
+        'vendor/lib64/mt6789/libcam.iopipe.so',
+        'vendor/lib64/mt6789/libmtkcam.featurepipe.capture.so',
+        'vendor/lib64/mt6789/libmtkcam.featurepipe.depthmap.so',
+        'vendor/lib64/mt6789/libmtkcam.featurepipe.streaming.so',
+        'vendor/lib64/mt6789/libmtkcam_3rdparty.customer.so',
+        'vendor/lib64/mt6789/libmtkcam_device3_app.so',
+        'vendor/lib64/mt6789/libmtkcam_device3_hal.so',
+        'vendor/lib64/mt6789/libmtkcam_device3_utils.so',
+        'vendor/lib64/mt6789/libmtkcam_hwnode.so',
+        'vendor/lib64/mt6789/libmtkcam_hwutils.so',
+        'vendor/lib64/mt6789/libmtkcam_pipelinemodel_isp.so',
+    ): blob_fixup()
+        .replace_needed('libutils.so', 'libutils-v32.so'),
     (
         'vendor/bin/hw/tranradionet',
         'vendor/bin/hw/vendor.mediatek.hardware.tranHwInfo@1.0-service',

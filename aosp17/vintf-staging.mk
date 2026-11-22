@@ -3,7 +3,6 @@ PRODUCT_SOONG_NAMESPACES += device/tecno/TECNO_KJ7/vintf
 
 PRODUCT_PACKAGES += \
     kj7_a17_vendor_vintf_manifest.xml \
-    kj7_a17_vendor_vintf_fragments_android.hardware.biometrics.fingerprint@2.1-service-mediatek.xml \
     kj7_a17_vendor_vintf_fragments_android.hardware.boot@1.2.xml \
     kj7_a17_vendor_vintf_fragments_android.hardware.cas@1.2-service-lazy.xml \
     kj7_a17_vendor_vintf_fragments_android.hardware.health@2.1.xml \
@@ -27,7 +26,6 @@ PRODUCT_PACKAGES += \
     kj7_a17_vendor_vintf_fragments_manifest_apuware_utils.xml \
     kj7_a17_vendor_vintf_fragments_manifest_cameraprovider.xml \
     kj7_a17_vendor_vintf_fragments_manifest_face_default.xml \
-    kj7_a17_vendor_vintf_fragments_manifest_fingerprint.xml \
     kj7_a17_vendor_vintf_fragments_manifest_hwcomposer.xml \
     kj7_a17_vendor_vintf_fragments_manifest_media_c2_V1_1_default.xml \
     kj7_a17_vendor_vintf_fragments_manifest_silead.xml \

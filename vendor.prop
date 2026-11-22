@@ -149,7 +149,13 @@ ro.vendor.mtk_tb_wifi_3g_mode=0
 ro.vendor.mtk_uicc_clf=1
 ro.vendor.wifi.sap.concurrent.iface=ap1
 ro.vendor.wifi.sap.interface=ap0
+ro.vendor.wlan.chrdev=wmt_chrdev_wifi
+ro.vendor.wlan.gen=gen4m_6789
+ro.vendor.wlan.standalone.log=y
 vendor.connsys.driver.ready=no
+wifi.direct.interface=p2p0
+wifi.interface=wlan0
+wifi.tethering.interface=ap0
 
 # Media / NeuralNetworks
 debug.mtk_tflite.target_nnapi=29
@@ -198,6 +204,7 @@ persist.vendor.vilte_support=1
 persist.vendor.viwifi_support=1
 persist.vendor.volte_support=1
 persist.vendor.vonr_setting_support=1
+ro.telephony.default_network=9,9,9,9
 ro.telephony.iwlan_operation_mode=AP-assisted
 ro.vendor.md_auto_setup_ims=1
 ro.vendor.md_prop_ver=1
@@ -235,6 +242,13 @@ ro.vendor.mtk_trustonic_tee_support=1
 # Sensors
 ro.vendor.init.sensor.rc=init.sensor_2_0.rc
 
-# Transsion / Silead
+# Transsion / Silead / Biometrics
+persist.vendor.fingerprint.sensor_id=0
+persist.vendor.fingerprint.sensor_location=540|2204|91|0
+persist.vendor.fingerprint.sensor_strength=2
+persist.vendor.fingerprint.type=udfps_optical
 ro.vendor.tranfac.support=1
 ro.vendor.transched.support=1
+
+# USB
+vendor.usb.controller=musb-hdrc

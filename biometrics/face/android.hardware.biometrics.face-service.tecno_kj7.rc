@@ -1,4 +1,4 @@
-service vendor.face-bridge /vendor/bin/hw/android.hardware.biometrics.face-service.transsion
+service vendor.face-default /vendor/bin/hw/android.hardware.biometrics.face-service.tecno_kj7
     class hal
     user system
     group system camera input

@@ -1,0 +1,50 @@
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+
+soong_namespace {}
+
+cc_binary {
+    name: "android.hardware.biometrics.face-service.tecno_kj7",
+    relative_install_path: "hw",
+    init_rc: ["android.hardware.biometrics.face-service.tecno_kj7.rc"],
+    vintf_fragments: ["android.hardware.biometrics.face-service.tecno_kj7.xml"],
+    vendor: true,
+    srcs: [
+        "CancellationSignal.cpp",
+        "Face.cpp",
+        "FaceHal.cpp",
+        "Session.cpp",
+        "SurfaceBridge.cpp",
+        "main.cpp",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-parameter",
+    ],
+    include_dirs: [
+        "frameworks/native/aidl/gui",
+    ],
+    shared_libs: [
+        "android.hardware.biometrics.common-V4-ndk",
+        "android.hardware.biometrics.face-V5-ndk",
+        "android.hardware.common-V2-ndk",
+        "android.hardware.graphics.bufferqueue@1.0",
+        "android.hardware.graphics.bufferqueue@2.0",
+        "android.hardware.keymaster-V4-ndk",
+        "android.hidl.token@1.0-utils",
+        "libbase",
+        "libbinder",
+        "libbinder_ndk",
+        "libbufferqueueconverter",
+        "libdl",
+        "libgui",
+        "libhardware",
+        "libhidlbase",
+        "liblog",
+        "libnativewindow",
+        "libutils",
+    ],
+}

@@ -1,0 +1,41 @@
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+
+soong_namespace {}
+
+cc_binary {
+    name: "android.hardware.biometrics.fingerprint-service.tecno_kj7",
+    relative_install_path: "hw",
+    init_rc: ["android.hardware.biometrics.fingerprint-service.tecno_kj7.rc"],
+    vintf_fragments: ["android.hardware.biometrics.fingerprint-service.tecno_kj7.xml"],
+    vendor: true,
+    srcs: [
+        "CancellationSignal.cpp",
+        "Fingerprint.cpp",
+        "LockoutTracker.cpp",
+        "Session.cpp",
+        "service.cpp",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-parameter",
+    ],
+    local_include_dirs: [
+        "include",
+    ],
+    shared_libs: [
+        "android.hardware.biometrics.common-V4-ndk",
+        "android.hardware.biometrics.fingerprint-V4-ndk",
+        "android.hardware.common-V2-ndk",
+        "android.hardware.keymaster-V4-ndk",
+        "libbase",
+        "libbinder_ndk",
+        "libcutils",
+        "libdl",
+        "libhardware",
+        "liblog",
+    ],
+}

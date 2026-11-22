@@ -31,7 +31,8 @@ endif
 # Soong namespaces
 PRODUCT_SOONG_NAMESPACES += \
     $(LOCAL_PATH) \
-    $(LOCAL_PATH)/face-bridge \
+    $(LOCAL_PATH)/biometrics/face \
+    $(LOCAL_PATH)/biometrics/fingerprint \
     hardware/google/interfaces \
     hardware/google/pixel/power-libperfmgr \
     hardware/lineage/interfaces/power-libperfmgr \
@@ -69,9 +70,10 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/audio/usb_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/usb_audio_policy_configuration.xml \
     $(LOCAL_PATH)/configs/audio/usb_audio_accessory_only_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/usb_audio_accessory_only_policy_configuration.xml
 
-# Biometrics (Face AIDL Bridge in /vendor)
+# Biometrics (Native C++ AIDL Face + UDFPS Fingerprint HALs)
 PRODUCT_PACKAGES += \
-    android.hardware.biometrics.face-service.transsion
+    android.hardware.biometrics.face-service.tecno_kj7 \
+    android.hardware.biometrics.fingerprint-service.tecno_kj7
 
 # Bluetooth
 PRODUCT_PACKAGES += \

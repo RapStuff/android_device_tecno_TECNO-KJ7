@@ -1,8 +1,8 @@
-# Face HAL (OPlus-Face-Bridge-Transsion)
-/(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.face-service\.transsion  u:object_r:hal_face_default_exec:s0
+# Face AIDL HAL
+/(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.face-service\.tecno_kj7         u:object_r:hal_face_default_exec:s0
 
-# Fingerprint / UDFPS (MediaTek + Silead)
-/(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.fingerprint@2\.1-service-mediatek  u:object_r:hal_fingerprint_default_exec:s0
+# Fingerprint / UDFPS AIDL HAL + Silead Ext
+/(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.fingerprint-service\.tecno_kj7  u:object_r:hal_fingerprint_default_exec:s0
 /(vendor|system/vendor)/bin/hw/vendor\.silead\.hardware\.fingerprintext@1\.0-service              u:object_r:hal_fingerprint_default_exec:s0
 /dev/silead_fp                                                                                    u:object_r:silead_fpd_device:s0
 /dev/silead_stub                                                                                  u:object_r:silead_fpd_device:s0
