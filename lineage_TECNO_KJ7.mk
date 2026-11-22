@@ -7,5 +7,5 @@ $(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 PRODUCT_DEVICE := TECNO_KJ7
 PRODUCT_NAME := lineage_TECNO_KJ7
 PRODUCT_BRAND := TECNO
-PRODUCT_MODEL := TECNO KJ7
+PRODUCT_MODEL := Tecno Spark 20 Pro+
 PRODUCT_MANUFACTURER := TECNO
