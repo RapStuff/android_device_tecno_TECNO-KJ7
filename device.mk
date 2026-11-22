@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 LOCAL_PATH := device/tecno/TECNO_KJ7
 
+$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/launch_with_vendor_ramdisk.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/compression.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/developer_gsi_keys.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
@@ -263,3 +264,12 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/wifi/wpa_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/wpa_supplicant_overlay.conf
 
 $(call inherit-product, vendor/tecno/TECNO-KJ7/TECNO-KJ7-vendor.mk)
+
+# Recovery / fastbootd / OTA sideload (recovery lives in vendor_boot)
+PRODUCT_PACKAGES += \
+    init.recovery.mt6789.rc \
+    create_pl_dev.recovery \
+    fastbootd \
+    android.hardware.fastboot@1.1-impl-mock \
+    update_engine_sideload \
+    update_verifier
