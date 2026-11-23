@@ -136,6 +136,11 @@ DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE := \
 # Power
 $(call soong_config_set,power_libperfmgr,mode_extension_lib,//device/tecno/TECNO_KJ7/power:libperfmgr-ext-tecno_kj7)
 
+# Health / Charging Control
+$(call soong_config_set,lineage_health,charging_control_charging_path,/sys/devices/platform/charger/bypass_charger)
+$(call soong_config_set,lineage_health,charging_control_charging_enabled,0)
+$(call soong_config_set,lineage_health,charging_control_charging_disabled,1)
+
 # SELinux
 include device/mediatek/sepolicy_vndr/SEPolicy.mk
 BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/vendor

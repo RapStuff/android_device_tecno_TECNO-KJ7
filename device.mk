@@ -101,11 +101,13 @@ PRODUCT_PACKAGES += \
 # Health
 PRODUCT_PACKAGES += \
     android.hardware.health-service.mediatek \
-    android.hardware.health-service.mediatek-recovery
+    android.hardware.health-service.mediatek-recovery \
+    vendor.lineage.health-service.default
 
 # HIDL / VNDK / Compat
 PRODUCT_PACKAGES += \
     hwservicemanager \
+    vndservicemanager \
     android.hardware.sensors@1.0-convert-shared \
     libavservices_minijail_vendor \
     libbase_shim \

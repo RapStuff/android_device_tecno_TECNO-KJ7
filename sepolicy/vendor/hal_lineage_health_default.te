@@ -1,0 +1,1 @@
+allow hal_lineage_health_default sysfs_bypass_charger:file rw_file_perms;

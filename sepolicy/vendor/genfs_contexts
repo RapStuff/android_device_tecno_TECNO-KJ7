@@ -5,3 +5,18 @@ genfscon sysfs /devices/platform/soc/14013000.dsi/lcm_hbm_state u:object_r:sysfs
 # Torch sysfs (prevents mtk_hal_camera FORTIFY: fscanf: null FILE* abort)
 genfscon sysfs /devices/virtual/torch/torch/torch_level u:object_r:sysfs_torch_file:s0
 genfscon sysfs /devices/virtual/sub_torch/sub_torch/sub_torch_level u:object_r:sysfs_sub_torch_file:s0
+
+# Charging Control
+genfscon sysfs /devices/platform/charger/bypass_charger u:object_r:sysfs_bypass_charger:s0
+
+# Wakeup sources for system_suspend
+genfscon sysfs /devices/platform/extcon_usb/wakeup/wakeup u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/mtk_ctd/power_supply/mtk_charger_type/wakeup u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/odm/odm:tran_auto_test/power_supply/tran-auto-test/wakeup u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/odm/odm:usb_switch/power_supply/usb_switch/wakeup u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/soc/11010000.spi1/spi_master/spi1/spi1.0/input/input4/wakeup u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/soc/11015000.i2c/i2c-3/3-0008/wakeup/wakeup u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/soc/11017000.i2c/i2c-5/5-006b/power_supply/charger/wakeup u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/soc/1101a000.i2c/i2c-6/6-004e/wakeup/wakeup u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/soc/11f00000.i2c/i2c-7/7-006f/power_supply/primary_dvchg/wakeup u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/soc/11f00000.i2c/i2c-7/7-006f/wakeup/wakeup u:object_r:sysfs_wakeup:s0
