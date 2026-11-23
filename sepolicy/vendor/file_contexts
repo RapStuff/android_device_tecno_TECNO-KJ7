@@ -3,20 +3,27 @@
 
 # Fingerprint / UDFPS AIDL HAL + Silead Ext
 /(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.fingerprint-service\.tecno_kj7  u:object_r:hal_fingerprint_default_exec:s0
-/(vendor|system/vendor)/bin/hw/vendor\.silead\.hardware\.fingerprintext@1\.0-service              u:object_r:hal_fingerprint_default_exec:s0
-/dev/silead_fp                                                                                    u:object_r:silead_fpd_device:s0
-/dev/silead_stub                                                                                  u:object_r:silead_fpd_device:s0
-/dev/spidev.*                                                                                     u:object_r:silead_fpd_device:s0
-/data/(vendor|system)/silead(/.*)?                                                                u:object_r:silead_fpd_data_file:s0
-/data/vendor/tran_fp(/.*)?                                                                        u:object_r:silead_fpd_data_file:s0
-/persist/silead(/.*)?                                                                             u:object_r:silead_fpd_data_file:s0
+/(vendor|system/vendor)/bin/hw/vendor\.silead\.hardware\.fingerprintext@1\.0-service          u:object_r:hal_fingerprint_default_exec:s0
+/dev/silead_fp                                                                                u:object_r:silead_fpd_device:s0
+/dev/silead_stub                                                                              u:object_r:silead_fpd_device:s0
+/dev/spidev.*                                                                                 u:object_r:silead_fpd_device:s0
+/dev/goodix_fp                                                                                u:object_r:gf_device:s0
+/data/(vendor|system)/silead(/.*)?                                                            u:object_r:silead_fpd_data_file:s0
+/data/vendor/tran_fp(/.*)?                                                                    u:object_r:silead_fpd_data_file:s0
+/data/vendor/goodix(/.*)?                                                                     u:object_r:vendor_gf_data_file:s0
+/persist/silead(/.*)?                                                                         u:object_r:silead_fpd_data_file:s0
+
+# Camera Watermark & Torch
+/data/vendor/camera_watermark(/.*)?                                                           u:object_r:vendor_watermark_data_file:s0
+/sys/devices/virtual/torch/torch/torch_level                                                  u:object_r:sysfs_torch_file:s0
+/sys/devices/virtual/sub_torch/sub_torch/sub_torch_level                                       u:object_r:sysfs_sub_torch_file:s0
 
 # Vibrator
-/(vendor|system/vendor)/bin/hw/android\.hardware\.vibrator-service\.richtap                        u:object_r:hal_vibrator_default_exec:s0
-/dev/aw8697_haptic                                                                                u:object_r:vibrator_device:s0
+/(vendor|system/vendor)/bin/hw/android\.hardware\.vibrator-service\.richtap                   u:object_r:hal_vibrator_default_exec:s0
+/dev/aw8697_haptic                                                                            u:object_r:vibrator_device:s0
 
 # Sensors
-/dev/elliptic[0-9]*                                                                               u:object_r:elliptic_device:s0
+/dev/elliptic[0-9]*                                                                           u:object_r:elliptic_device:s0
 
 # Transsion / MTK vendor services
 /(vendor|system/vendor)/bin/hw/vendor\.transsion\.hardware\.trancam\.trancamserver@1\.0-service   u:object_r:trancamserver_exec:s0

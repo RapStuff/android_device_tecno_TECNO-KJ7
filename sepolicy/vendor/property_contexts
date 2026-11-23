@@ -3,3 +3,13 @@ persist.vendor.transsion.auto_test       u:object_r:vendor_transsion_fingerprint
 ro.vendor.camera_tran_hal_server_support u:object_r:vendor_mtk_camera_prop:s0
 persist.vendor.tran_nfc_chip_manufacturer u:object_r:vendor_tran_nfc_chip_prop:s0
 vendor.tran_mcf                          u:object_r:vendor_tran_mcf_prop:s0
+
+# Fingerprint
+vendor\.fp\.                             u:object_r:vendor_fingerprint_prop:s0
+persist\.vendor\.fp\.                    u:object_r:vendor_fingerprint_prop:s0
+persist\.vendor\.sys\.fp\.               u:object_r:vendor_fingerprint_prop:s0
+persist\.vendor\.gf\.                    u:object_r:vendor_fingerprint_prop:s0
+persist\.vendor\.goodix\.                u:object_r:vendor_fingerprint_prop:s0
+
+# Camera
+ro\.vendor\.transsion\.camera_watermark   u:object_r:vendor_transsion_camera_watermark_support_prop:s0

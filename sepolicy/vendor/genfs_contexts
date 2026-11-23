@@ -1,3 +1,7 @@
 genfscon proc /gesture_function u:object_r:proc_gesture_function:s0
 genfscon proc /fingerprint_status u:object_r:proc_fingerprint_status:s0
 genfscon sysfs /devices/platform/soc/14013000.dsi/lcm_hbm_state u:object_r:sysfs_lcm_hbm:s0
+
+# Torch sysfs (prevents mtk_hal_camera FORTIFY: fscanf: null FILE* abort)
+genfscon sysfs /devices/virtual/torch/torch/torch_level u:object_r:sysfs_torch_file:s0
+genfscon sysfs /devices/virtual/sub_torch/sub_torch/sub_torch_level u:object_r:sysfs_sub_torch_file:s0

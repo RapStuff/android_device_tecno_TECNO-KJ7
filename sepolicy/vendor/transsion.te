@@ -48,6 +48,7 @@ init_daemon_domain(iomanager)
 type pnpmgr, domain;
 type pnpmgr_exec, exec_type, vendor_file_type, file_type;
 init_daemon_domain(pnpmgr)
+vndbinder_use(pnpmgr)
 
 type init_tran_mcf_sh, domain;
 type init_tran_mcf_sh_exec, exec_type, vendor_file_type, file_type;
@@ -63,3 +64,26 @@ type aeev_exec, exec_type, vendor_file_type, file_type;
 init_daemon_domain(aeev)
 
 allow vendor_init mtk_radio_device:lnk_file unlink;
+
+# Camera & Trancamserver IPC
+allow mtk_hal_camera hal_trancamserver_hwservice:hwservice_manager find;
+binder_call(mtk_hal_camera, trancamserver)
+binder_call(trancamserver, mtk_hal_camera)
+allow mtk_hal_camera trancamserver:fd use;
+binder_call(system_server, trancamserver)
+allow system_server hal_trancamserver_hwservice:hwservice_manager find;
+
+# Camera Watermark
+allow mtk_hal_camera vendor_watermark_data_file:dir rw_dir_perms;
+allow mtk_hal_camera vendor_watermark_data_file:file create_file_perms;
+get_prop(mtk_hal_camera, vendor_transsion_camera_watermark_support_prop)
+
+# Camera Torch sysfs (prevents FORTIFY: fscanf: null FILE* crash in Hal3ARawImp::uninit)
+allow mtk_hal_camera sysfs_torch_file:file rw_file_perms;
+allow mtk_hal_camera sysfs_sub_torch_file:file rw_file_perms;
+
+# Hwservicemanager prop reads for Transsion / MTK HAL daemons
+get_prop(trancamserver, hwservicemanager_prop)
+get_prop(tran_hwinfo_binder, hwservicemanager_prop)
+get_prop(hal_paytrigger, hwservicemanager_prop)
+get_prop(hal_hap, hwservicemanager_prop)

@@ -1,14 +1,67 @@
+typeattribute hal_fingerprint_default hal_teei_capi_client;
+
+# Devices
 allow hal_fingerprint_default silead_fpd_device:chr_file rw_file_perms;
-allow hal_fingerprint_default silead_fpd_data_file:dir create_dir_perms;
-allow hal_fingerprint_default silead_fpd_data_file:file create_file_perms;
-allow hal_fingerprint_default mnt_vendor_file:dir search;
-allow hal_fingerprint_default self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
-allow hal_fingerprint_default sysfs:file rw_file_perms;
-allow hal_fingerprint_default sysfs_lcm_hbm:file rw_file_perms;
-allow hal_fingerprint_default proc_gesture_function:file rw_file_perms;
-allow hal_fingerprint_default proc_fingerprint_status:file rw_file_perms;
+allow hal_fingerprint_default gf_device:chr_file rw_file_perms;
+allow hal_fingerprint_default uhid_device:chr_file rw_file_perms;
 allow hal_fingerprint_default input_device:dir r_dir_perms;
 allow hal_fingerprint_default input_device:chr_file r_file_perms;
+
+# Sockets & IPC
+allow hal_fingerprint_default self:netlink_socket create_socket_perms_no_ioctl;
+allow hal_fingerprint_default self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
+allow hal_fingerprint_default self:unix_stream_socket create_stream_socket_perms;
+
+# Data directories and files (enrollment / calibration / templates)
+allow hal_fingerprint_default silead_fpd_data_file:dir create_dir_perms;
+allow hal_fingerprint_default silead_fpd_data_file:file create_file_perms;
+allow hal_fingerprint_default vendor_gf_data_file:dir create_dir_perms;
+allow hal_fingerprint_default vendor_gf_data_file:file create_file_perms;
+allow hal_fingerprint_default vendor_data_file:dir { create_dir_perms write add_name remove_name };
+allow hal_fingerprint_default vendor_data_file:file create_file_perms;
+allow hal_fingerprint_default persist_data_file:dir { create_dir_perms write add_name remove_name };
+allow hal_fingerprint_default persist_data_file:file create_file_perms;
+allow hal_fingerprint_default mnt_vendor_file:dir { search r_dir_perms };
+allow hal_fingerprint_default mnt_vendor_file:file rw_file_perms;
+
+# TEE (Trustonic MobiCore & Microtrust TEEI)
+allow hal_fingerprint_default mobicore:unix_stream_socket connectto;
+allow hal_fingerprint_default mobicore_user_device:chr_file rw_file_perms;
+allow hal_fingerprint_default mobicore_data_file:dir r_dir_perms;
+allow hal_fingerprint_default mobicore_data_file:file { r_file_perms map };
+allow hal_fingerprint_default teei_fp_device:chr_file rw_file_perms;
+allow hal_fingerprint_default teei_client_device:chr_file rw_file_perms;
+allow hal_fingerprint_default teei_control_file:dir r_dir_perms;
+allow hal_fingerprint_default teei_control_file:file rw_file_perms;
+allow hal_fingerprint_default teei_control_file:lnk_file r_file_perms;
+allow hal_fingerprint_default tkcore_admin_device:chr_file rw_file_perms;
+
+# Sysfs & Proc
+allow hal_fingerprint_default sysfs:file r_file_perms;
+allow hal_fingerprint_default sysfs_lcm_hbm:file rw_file_perms;
+allow hal_fingerprint_default sysfs_backlight_file:file rw_file_perms;
+allow hal_fingerprint_default sysfs_lcm_name_file:file rw_file_perms;
+allow hal_fingerprint_default sysfs_fp_name_path:dir r_dir_perms;
+allow hal_fingerprint_default sysfs_fp_name_path:file rw_file_perms;
+allow hal_fingerprint_default sysfs_leds:dir r_dir_perms;
 allow hal_fingerprint_default sysfs_batteryinfo:dir r_dir_perms;
 allow hal_fingerprint_default sysfs_batteryinfo:file r_file_perms;
+allow hal_fingerprint_default proc_gesture_function:file rw_file_perms;
+allow hal_fingerprint_default proc_fingerprint_status:file rw_file_perms;
+allow hal_fingerprint_default proc_ppm:dir r_dir_perms;
+allow hal_fingerprint_default proc_ppm:file rw_file_perms;
+
+# Properties
 set_prop(hal_fingerprint_default, vendor_silead_fp_prop)
+get_prop(hal_fingerprint_default, vendor_silead_fp_prop)
+set_prop(hal_fingerprint_default, vendor_fingerprint_prop)
+get_prop(hal_fingerprint_default, vendor_fingerprint_prop)
+get_prop(hal_fingerprint_default, vendor_transsion_fingerprint_prop)
+
+# Services & Binder
+vndbinder_use(hal_fingerprint_default)
+add_hwservice(hal_fingerprint_default, goodix_fingerprint_hwservice)
+allow hal_fingerprint_default goodix_fingerprint_hwservice:hwservice_manager find;
+allow hal_fingerprint_default hal_power_hwservice:hwservice_manager find;
+binder_call(hal_fingerprint_default, platform_app)
+binder_call(platform_app, hal_fingerprint_default)
