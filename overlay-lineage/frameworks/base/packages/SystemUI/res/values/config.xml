@@ -5,4 +5,9 @@
 
     <!-- Doze: support STATE_DOZE -->
     <bool name="doze_display_state_supported">true</bool>
+
+    <!-- SystemUI Background Blur -->
+    <bool name="config_volumeDialogUseBackgroundBlur">true</bool>
+    <bool name="config_supportBlurredWallpaper">true</bool>
+    <bool name="config_translucentStandalonePowerMenu">true</bool>
 </resources>

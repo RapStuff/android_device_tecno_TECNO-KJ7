@@ -293,3 +293,6 @@ PRODUCT_PACKAGES += \
     android.hardware.fastboot@1.1-impl-mock \
     update_engine_sideload \
     update_verifier
+
+# Private Keys (Release Signing)
+-include vendor/private/keys/keys.mk
