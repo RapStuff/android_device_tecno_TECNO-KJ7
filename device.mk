@@ -201,8 +201,18 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/perf/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json
 
-# RIL
+# RIL / IMS
 ENABLE_VENDOR_RIL_SERVICE := true
+
+$(call inherit-product-if-exists, hardware/mediatek/frameworks/mediatek-frameworks.mk)
+
+PRODUCT_PACKAGES += \
+    MssiCarrierConfigOverlay \
+    MssiFrameworkTelephonyOverlay \
+    MssiTelephonyOverlay
+
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/configs/permissions/privapp-permissions-mediatek-ims.xml:$(TARGET_COPY_OUT_SYSTEM_EXT)/etc/permissions/privapp-permissions-mediatek-ims.xml
 
 # Rootdir
 PRODUCT_PACKAGES += \
