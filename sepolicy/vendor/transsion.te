@@ -91,6 +91,7 @@ get_prop(hal_hap, hwservicemanager_prop)
 # Audio HAL
 allow hal_audio_default hf_manager_device:chr_file rw_file_perms;
 allow hal_audio_default sysfs_batteryinfo:dir search;
+allow hal_audio_default sysfs_batteryinfo:file r_file_perms;
 
 # Camera HAL & PQ HAL
 set_prop(mtk_hal_camera, vendor_mtk_seninf_prop)
@@ -98,6 +99,7 @@ allow mtk_hal_camera sysfs:file r_file_perms;
 dontaudit mtk_hal_camera shell_data_file:dir search;
 dontaudit mtk_hal_camera default_prop:file read;
 allow mtk_hal_pq mnt_vendor_file:dir search;
+allow mtk_hal_pq persist_data_file:dir search;
 allow mtk_hal_pq sysfs:file r_file_perms;
 
 # Health HAL
@@ -109,17 +111,25 @@ dontaudit ccci_rpcd default_prop:file read;
 allow chg_sence proc_bootconfig:file r_file_perms;
 allow chg_sence proc_cmdline:file r_file_perms;
 allow chg_sence sysfs_dt_firmware_android:dir search;
+allow chg_sence sysfs_dt_firmware_android:file r_file_perms;
+allow chg_sence mnt_vendor_file:dir search;
 allow chg_sence gsi_metadata_file:dir search;
 dontaudit get_ufs_error cache_file:dir search;
 allow pnpmgr sysfs:file r_file_perms;
+allow pnpmgr proc_cgroups:file r_file_perms;
+allow pnpmgr cgroup:file r_file_perms;
+allow pnpmgr sysfs_fpsgo:dir search;
 dontaudit pnpmgr sysfs:file write;
 dontaudit pnpmgr property_socket:sock_file write;
 allow smartcharging kmsg_device:chr_file getattr;
 dontaudit stflashtool nfc_prop:file r_file_perms;
 allow stflashtool sysfs_soc:dir search;
+allow stflashtool sysfs_soc:file r_file_perms;
 allow tran_tinymix audio_device:dir search;
+allow tran_tinymix audio_device:chr_file rw_file_perms;
 allow tranradionet devpts:chr_file rw_file_perms;
 binder_use(tranradionet)
+dontaudit netutils_wrapper tranradionet:fd use;
 
 # vendor_init permissions & expected denials
 allow vendor_init proc_fingerprint_status:file w_file_perms;

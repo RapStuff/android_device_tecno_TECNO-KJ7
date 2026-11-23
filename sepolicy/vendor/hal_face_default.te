@@ -25,6 +25,7 @@ binder_call(hal_face_default, stats_service_server)
 binder_call(hal_face_default, system_app)
 binder_call(system_app, hal_face_default)
 allow hal_face_default system_app:fd use;
+allow hal_face_default surfaceflinger:fd use;
 
 # Face data & NVRAM/mnt_vendor storage
 allow hal_face_default face_vendor_data_file:dir create_dir_perms;
