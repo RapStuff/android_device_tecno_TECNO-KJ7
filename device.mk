@@ -209,9 +209,14 @@ ENABLE_VENDOR_RIL_SERVICE := true
 $(call inherit-product-if-exists, hardware/mediatek/frameworks/mediatek-frameworks.mk)
 
 PRODUCT_PACKAGES += \
+    CarrierConfigOverlayKJ7 \
     MssiCarrierConfigOverlay \
     MssiFrameworkTelephonyOverlay \
     MssiTelephonyOverlay
+
+PRODUCT_SYSTEM_PROPERTIES += \
+    persist.dbg.volte_avail_ovr=1 \
+    persist.dbg.wfc_avail_ovr=1
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/permissions/privapp-permissions-mediatek-ims.xml:$(TARGET_COPY_OUT_SYSTEM_EXT)/etc/permissions/privapp-permissions-mediatek-ims.xml
@@ -267,6 +272,7 @@ PRODUCT_PACKAGES += \
 $(call soong_config_set_bool,mediatek_wifi_hal,use_pre_u_qpr2_struct,true)
 
 PRODUCT_PACKAGES += \
+    WifiOverlayKJ7 \
     android.hardware.wifi-service \
     hostapd \
     libwifi-hal-wrapper \

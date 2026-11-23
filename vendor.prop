@@ -163,6 +163,13 @@ ro.vendor.mtk_nn.option=A,B,C,D,E,F,G,Z
 ro.vendor.mtk_nn_quant_preferred=1
 vendor.mtk.vdec.waitkeyframeforplay=15
 
+# Fast Charging
+persist.vendor.mediatek.fast_charging.support=1
+
+# Memory / ZRAM
+persist.vendor.swapfile_enable=false
+ro.vendor.memfusion2_2.support=false
+
 # Platform / Storage / AEE
 ro.vendor.aee.convert64=1
 ro.vendor.have_aeev_feature=1

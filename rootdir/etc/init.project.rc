@@ -84,6 +84,20 @@ on post-fs-data
     chown system system /sys/class/leds/vibrator_single/vbat_monitor
     # BSP:add for LRA XLWYEHLYEL-1 by hongwu.zhan 20221206 end
 
+    # Transsion Charging Circuit Nodes Permissions
+    chown system system /sys/devices/platform/charger/enable_meta_current_limit
+    chmod 0666 /sys/devices/platform/charger/enable_meta_current_limit
+    chown system system /sys/devices/platform/charger/enable_sc
+    chmod 0666 /sys/devices/platform/charger/enable_sc
+    chown system system /sys/devices/platform/charger/input_current
+    chmod 0666 /sys/devices/platform/charger/input_current
+    chown system system /sys/devices/platform/charger/sc_ibat_limit
+    chmod 0666 /sys/devices/platform/charger/sc_ibat_limit
+    chown system system /sys/devices/platform/charger/sc_tuisoc
+    chmod 0666 /sys/devices/platform/charger/sc_tuisoc
+    chown system system /sys/class/power_supply/charger/input_current_limit
+    chmod 0666 /sys/class/power_supply/charger/input_current_limit
+
 on init
     # Refer to http://source.android.com/devices/tech/storage/index.html
     # It said, "Starting in Android 4.4, multiple external storage devices are surfaced to developers through
@@ -110,6 +124,11 @@ on property:sys.boot_completed=1
     write /dev/cpuctl/dex2oat/cpu.shares 512
     setprop persist.vendor.powerhal.dex2oat_threads 4
     #SPD: add for control dex2oat cpu by fan.feng1 20230619 end
+
+    # Uncap Transsion 33W fast charging
+    write /sys/devices/platform/charger/enable_meta_current_limit 0
+    write /sys/devices/platform/charger/enable_sc 1
+    write /sys/devices/platform/charger/sc_ibat_limit 7000
 #SPD: modify for swap zram write-back by zihan.ju at 20230922 start
 on property:sys.boot_completed=1 && property:persist.vendor.swapfile_enable=true && property:ro.vendor.memfusion2_2.support=true
     swapon_all /vendor/etc/memfusion2/fstab.enableswap_wb
