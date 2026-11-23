@@ -87,3 +87,47 @@ get_prop(trancamserver, hwservicemanager_prop)
 get_prop(tran_hwinfo_binder, hwservicemanager_prop)
 get_prop(hal_paytrigger, hwservicemanager_prop)
 get_prop(hal_hap, hwservicemanager_prop)
+
+# Audio HAL
+allow hal_audio_default hf_manager_device:chr_file rw_file_perms;
+allow hal_audio_default sysfs_batteryinfo:dir search;
+
+# Camera HAL & PQ HAL
+set_prop(mtk_hal_camera, vendor_mtk_seninf_prop)
+allow mtk_hal_camera sysfs:file r_file_perms;
+dontaudit mtk_hal_camera shell_data_file:dir search;
+dontaudit mtk_hal_camera default_prop:file read;
+allow mtk_hal_pq mnt_vendor_file:dir search;
+allow mtk_hal_pq sysfs:file r_file_perms;
+
+# Health HAL
+allow hal_health_default sysfs:file r_file_perms;
+
+# Transsion & MTK daemons
+dontaudit bip net_dns_prop:file r_file_perms;
+dontaudit ccci_rpcd default_prop:file read;
+allow chg_sence proc_bootconfig:file r_file_perms;
+allow chg_sence proc_cmdline:file r_file_perms;
+allow chg_sence sysfs_dt_firmware_android:dir search;
+allow chg_sence gsi_metadata_file:dir search;
+dontaudit get_ufs_error cache_file:dir search;
+allow pnpmgr sysfs:file r_file_perms;
+dontaudit pnpmgr sysfs:file write;
+dontaudit pnpmgr property_socket:sock_file write;
+allow smartcharging kmsg_device:chr_file getattr;
+dontaudit stflashtool nfc_prop:file r_file_perms;
+allow stflashtool sysfs_soc:dir search;
+allow tran_tinymix audio_device:dir search;
+allow tranradionet devpts:chr_file rw_file_perms;
+binder_use(tranradionet)
+
+# vendor_init permissions & expected denials
+allow vendor_init proc_fingerprint_status:file w_file_perms;
+allow vendor_init proc_gesture_function:file w_file_perms;
+allow vendor_init conn_dbg_dev_device:file create_file_perms;
+dontaudit vendor_init cache_file:dir { getattr search setattr };
+dontaudit vendor_init vendor_userdir_file:dir { write add_name };
+dontaudit vendor_init device:file create;
+dontaudit vendor_init system_data_file:dir create;
+dontaudit vendor_init default_prop:property_service set;
+dontaudit vendor_init wifi_prop:property_service set;
