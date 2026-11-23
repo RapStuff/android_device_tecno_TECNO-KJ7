@@ -34,7 +34,7 @@ AB_OTA_PARTITIONS += \
     vbmeta_vendor \
     vendor \
     vendor_boot \
-    vendor_dlkm $(KJ7_TR_PARTITIONS)
+    vendor_dlkm
 
 TARGET_NO_KERNEL := false
 TARGET_FORCE_PREBUILT_KERNEL := true
