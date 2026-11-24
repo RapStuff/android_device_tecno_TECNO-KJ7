@@ -207,6 +207,9 @@ std::vector<int32_t> parseEnrolledFaceIds() {
             pos += len;
             if (field == 5) {
                 size_t spos = 0;
+                bool hasSubId = false;
+                bool hasTemplateData = false;
+                int32_t subId = 0;
                 while (spos < len) {
                     uint64_t stag = 0;
                     if (!readVarintSpan(sub, len, spos, stag)) break;
@@ -215,8 +218,9 @@ std::vector<int32_t> parseEnrolledFaceIds() {
                     if (swire == 0) {
                         uint64_t sval = 0;
                         if (!readVarintSpan(sub, len, spos, sval)) break;
-                        if (sfield == 1 && sval > 0) {
-                            ids.push_back(static_cast<int32_t>(sval));
+                        if (sfield == 1) {
+                            hasSubId = true;
+                            subId = static_cast<int32_t>(sval);
                         }
                     } else if (swire == 1) {
                         if (spos + 8 > len) break;
@@ -228,10 +232,18 @@ std::vector<int32_t> parseEnrolledFaceIds() {
                         uint64_t slen = 0;
                         if (!readVarintSpan(sub, len, spos, slen)) break;
                         if (spos + static_cast<size_t>(slen) > len) break;
+                        if (sfield == 2 && slen > 0) {
+                            hasTemplateData = true;
+                        }
                         spos += static_cast<size_t>(slen);
                     } else {
                         break;
                     }
+                }
+                if (hasSubId && (subId > 0 || hasTemplateData)) {
+                    // SenseTime encodes the first enrolled template with sub-field 1 = 0,
+                    // while face.default.so normalizes IDs <= 0 to faceId 1.
+                    ids.push_back(subId > 0 ? subId : 1);
                 }
             }
         } else {
