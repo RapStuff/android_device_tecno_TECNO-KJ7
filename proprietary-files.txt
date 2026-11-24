@@ -1344,10 +1344,8 @@ vendor/lib/egl/mt6789/libGLES_mali.so;SYMLINK=vendor/lib/egl/libGLES_mali.so
 vendor/lib/hw/android.hardware.audio@6.0-impl-mediatek.so
 vendor/lib/hw/android.hardware.audio@7.0-impl-mediatek.so
 vendor/lib/hw/android.hardware.thermal@2.0-impl.so
-vendor/lib/hw/audio.bluetooth.default.so
 vendor/lib/hw/audio.primary.mediatek.so;SYMLINK=vendor/lib/hw/audio.primary.mt6789.so
 vendor/lib/hw/audio.r_submix.mediatek.so;SYMLINK=vendor/lib/hw/audio.r_submix.mt6789.so
-vendor/lib/hw/audio.usb.default.so
 vendor/lib/hw/face.default.so
 vendor/lib/hw/gps.default.so
 vendor/lib/hw/kmsetkey.trustonic.so;SYMLINK=vendor/lib/hw/kmsetkey.default.so
@@ -2095,10 +2093,8 @@ vendor/lib64/hw/android.hardware.gnss-impl-mediatek.so
 vendor/lib64/hw/android.hardware.gnss@2.1-impl-mediatek.so
 vendor/lib64/hw/android.hardware.sensors@2.X-subhal-mediatek.so
 vendor/lib64/hw/android.hardware.thermal@2.0-impl.so
-vendor/lib64/hw/audio.bluetooth.default.so
 vendor/lib64/hw/audio.primary.mediatek.so;SYMLINK=vendor/lib64/hw/audio.primary.mt6789.so
 vendor/lib64/hw/audio.r_submix.mediatek.so;SYMLINK=vendor/lib64/hw/audio.r_submix.mt6789.so
-vendor/lib64/hw/audio.usb.default.so
 vendor/lib64/hw/face.default.so
 vendor/lib64/hw/fingerprint.silead.default.so
 vendor/lib64/hw/gf_fingerprint.default.so
