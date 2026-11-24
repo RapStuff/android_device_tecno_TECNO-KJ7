@@ -6,4 +6,12 @@
 <resources>
     <!-- Physical display pitch in microns/px: 25400 / 392.805 dpi = 64.66 um/px -->
     <item name="pixel_pitch" format="float" type="dimen">64.66</item>
+
+    <!-- Status bar padding for 28dp rounded corners & 36dp cutout height -->
+    <dimen name="status_bar_padding_start">6dp</dimen>
+    <dimen name="status_bar_padding_end">6dp</dimen>
+    <dimen name="status_bar_padding_top">2dp</dimen>
+
+    <!-- Keep lockscreen/AOD indication text above UDFPS (center y=2204px, r=91px => ~108dp from bottom) -->
+    <dimen name="keyguard_indication_margin_bottom">118dp</dimen>
 </resources>
