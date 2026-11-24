@@ -310,6 +310,7 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/wifi/wpa_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/wpa_supplicant_overlay.conf
 
 $(call inherit-product, vendor/tecno/TECNO-KJ7/TECNO-KJ7-vendor.mk)
+$(call inherit-product-if-exists, vendor/tecno/leicacamera/leicacamera.mk)
 
 # Recovery / fastbootd / OTA sideload (recovery lives in vendor_boot)
 PRODUCT_PACKAGES += \

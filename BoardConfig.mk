@@ -160,3 +160,4 @@ WIFI_DRIVER_STATE_OFF := "0"
 WIFI_HIDL_UNIFIED_SUPPLICANT_SERVICE_RC_ENTRY := true
 
 include vendor/tecno/TECNO-KJ7/BoardConfigVendor.mk
+-include vendor/tecno/leicacamera/BoardConfig.mk
