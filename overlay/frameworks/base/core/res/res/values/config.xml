@@ -9,8 +9,12 @@
     <integer name="config_defaultRefreshRate">120</integer>
     <integer name="config_defaultPeakRefreshRate">120</integer>
     <bool name="config_automatic_brightness_available">true</bool>
-    <integer name="config_autoBrightnessBrighteningLightDebounce">1000</integer>
-    <integer name="config_autoBrightnessDarkeningLightDebounce">2000</integer>
+    <integer name="config_autoBrightnessBrighteningLightDebounce">500</integer>
+    <integer name="config_autoBrightnessDarkeningLightDebounce">1000</integer>
+    <integer name="config_autoBrightnessInitialLightSensorRate">125</integer>
+    <integer name="config_autoBrightnessLightSensorRate">125</integer>
+    <integer name="config_brightness_ramp_rate_fast">80</integer>
+    <integer name="config_brightness_ramp_rate_slow">25</integer>
     <integer-array name="config_autoBrightnessLevels">
         <item>5</item><item>15</item><item>30</item><item>60</item>
         <item>100</item><item>160</item><item>256</item><item>384</item>
@@ -19,11 +23,11 @@
         <item>18432</item>
     </integer-array>
     <integer-array name="config_autoBrightnessLcdBacklightValues">
-        <item>12</item><item>24</item><item>38</item><item>52</item>
-        <item>68</item><item>84</item><item>100</item><item>114</item>
-        <item>126</item><item>140</item><item>156</item><item>184</item>
-        <item>212</item><item>230</item><item>245</item><item>255</item>
-        <item>255</item><item>255</item>
+        <item>9</item><item>16</item><item>24</item><item>34</item>
+        <item>48</item><item>64</item><item>80</item><item>96</item>
+        <item>112</item><item>128</item><item>146</item><item>164</item>
+        <item>186</item><item>208</item><item>224</item><item>238</item>
+        <item>248</item><item>255</item>
     </integer-array>
 
     <!-- thub-res.apk: sensor UI 182x182px, bottom margin 141px. -->
@@ -70,4 +74,32 @@
     <bool name="config_pinnerCameraApp">true</bool>
     <integer name="config_pinnerHomePinBytes">62914560</integer>
     <integer name="config_pinnerCameraPinBytes">83886080</integer>
+
+    <!-- Crisp, softer haptic patterns for PMIC regulator ERM vibrator -->
+    <integer name="config_defaultHapticFeedbackIntensity">1</integer>
+    <integer name="config_defaultKeyboardVibrationIntensity">1</integer>
+    <integer-array name="config_longPressVibePattern">
+        <item>0</item>
+        <item>18</item>
+    </integer-array>
+    <integer-array name="config_virtualKeyVibePattern">
+        <item>0</item>
+        <item>12</item>
+    </integer-array>
+    <integer-array name="config_clockTickVibePattern">
+        <item>0</item>
+        <item>8</item>
+    </integer-array>
+    <integer-array name="config_doubleClickVibePattern">
+        <item>0</item>
+        <item>12</item>
+        <item>35</item>
+        <item>12</item>
+    </integer-array>
+    <integer-array name="config_defaultNotificationVibePattern">
+        <item>0</item>
+        <item>120</item>
+        <item>100</item>
+        <item>120</item>
+    </integer-array>
 </resources>

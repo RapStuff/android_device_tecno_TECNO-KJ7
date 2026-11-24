@@ -11,7 +11,7 @@ ro.vendor.tran.audiotimeout=true
 ro.vendor.tran.hifiaudio_support=0
 
 # Bluetooth Audio (AOSP software A2DP / AIDL HAL)
-bluetooth.profile.sap.server.enabled=true
+persist.bluetooth.a2dp_aac.vbr_supported=true
 persist.bluetooth.a2dp_offload.disabled=true
 ro.bluetooth.a2dp_offload.supported=false
 vendor.bluetooth.ldac.abr=true
