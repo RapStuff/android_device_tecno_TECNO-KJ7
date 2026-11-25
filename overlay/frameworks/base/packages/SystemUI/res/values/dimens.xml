@@ -12,6 +12,6 @@
     <dimen name="status_bar_padding_end">6dp</dimen>
     <dimen name="status_bar_padding_top">2dp</dimen>
 
-    <!-- Keep lockscreen/AOD indication text above UDFPS (center y=2204px, r=91px => ~108dp from bottom) -->
-    <dimen name="keyguard_indication_margin_bottom">124dp</dimen>
+    <!-- Keep lockscreen/AOD indication text cleanly above low UDFPS (top y=2113px => ~107.7dp from bottom; 142dp => ~34dp gap) -->
+    <dimen name="keyguard_indication_margin_bottom">142dp</dimen>
 </resources>
