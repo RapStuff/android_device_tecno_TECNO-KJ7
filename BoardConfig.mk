@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-DEVICE_PATH := device/tecno/TECNO_KJ7
+DEVICE_PATH := device/tecno/kj7
 KJ7_KERNEL_PATH := device/tecno/TECNO-KJ7-kernel
 
 TARGET_ARCH := arm64
@@ -18,7 +18,7 @@ TARGET_2ND_CPU_VARIANT_RUNTIME := cortex-a55
 TARGET_BOARD_PLATFORM := mt6789
 TARGET_BOOTLOADER_BOARD_NAME := TECNO-KJ7
 TARGET_NO_BOOTLOADER := true
-TARGET_OTA_ASSERT_DEVICE := TECNO-KJ7,TECNO_KJ7,KJ7
+TARGET_OTA_ASSERT_DEVICE := TECNO-KJ7,TECNO_KJ7,KJ7,kj7
 include $(DEVICE_PATH)/transsion-partitions.mk
 
 AB_OTA_UPDATER := true
@@ -134,7 +134,7 @@ DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE := \
     $(DEVICE_PATH)/vintf/framework_compatibility_matrix.xml
 
 # Power
-$(call soong_config_set,power_libperfmgr,mode_extension_lib,//device/tecno/TECNO_KJ7/power:libperfmgr-ext-tecno_kj7)
+$(call soong_config_set,power_libperfmgr,mode_extension_lib,//device/tecno/kj7/power:libperfmgr-ext-tecno_kj7)
 
 # Health / Charging Control
 $(call soong_config_set,lineage_health,charging_control_charging_path,/sys/devices/platform/charger/bypass_charger)
@@ -159,5 +159,5 @@ WIFI_DRIVER_STATE_ON := "1"
 WIFI_DRIVER_STATE_OFF := "0"
 WIFI_HIDL_UNIFIED_SUPPLICANT_SERVICE_RC_ENTRY := true
 
-include vendor/tecno/TECNO-KJ7/BoardConfigVendor.mk
+include vendor/tecno/kj7/BoardConfigVendor.mk
 -include vendor/tecno/leicacamera/BoardConfig.mk
