@@ -4,8 +4,8 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 $(call inherit-product, device/tecno/TECNO_KJ7/device.mk)
 $(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 
-PRODUCT_DEVICE := TECNO_KJ7
-PRODUCT_NAME := lineage_TECNO_KJ7
+PRODUCT_DEVICE := KJ7
+PRODUCT_NAME := lineage_KJ7
 PRODUCT_BRAND := TECNO
 PRODUCT_MODEL := Tecno Spark 20 Pro+
 PRODUCT_MANUFACTURER := TECNO
