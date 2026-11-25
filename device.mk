@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-LOCAL_PATH := device/tecno/TECNO_KJ7
+LOCAL_PATH := device/tecno/kj7
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/launch_with_vendor_ramdisk.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/compression.mk)
@@ -309,7 +309,7 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/wifi/wpa_supplicant.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/wpa_supplicant.conf \
     $(LOCAL_PATH)/configs/wifi/wpa_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/wpa_supplicant_overlay.conf
 
-$(call inherit-product, vendor/tecno/TECNO-KJ7/TECNO-KJ7-vendor.mk)
+$(call inherit-product, vendor/tecno/kj7/kj7-vendor.mk)
 $(call inherit-product-if-exists, vendor/tecno/leicacamera/leicacamera.mk)
 
 # Recovery / fastbootd / OTA sideload (recovery lives in vendor_boot)

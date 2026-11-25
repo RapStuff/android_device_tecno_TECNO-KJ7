@@ -21,7 +21,7 @@ from extract_utils.main import (
 )
 
 namespace_imports = [
-    'device/tecno/TECNO_KJ7',
+    'device/tecno/kj7',
     'hardware/mediatek',
     'hardware/mediatek/libion_mtk',
     'hardware/mediatek/libmtkperf_client',
@@ -547,9 +547,9 @@ blob_fixups: blob_fixups_user_type = {
 }  # fmt: skip
 
 module = ExtractUtilsModule(
-    'TECNO-KJ7',
+    'kj7',
     'tecno',
-    device_rel_path='device/tecno/TECNO_KJ7',
+    device_rel_path='device/tecno/kj7',
     blob_fixups=blob_fixups,
     lib_fixups=lib_fixups,
     namespace_imports=namespace_imports,

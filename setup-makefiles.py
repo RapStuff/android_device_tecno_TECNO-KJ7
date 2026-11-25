@@ -7,16 +7,16 @@
 from extract_utils.main import ExtractUtils, ExtractUtilsModule
 
 namespace_imports = [
-    'device/tecno/TECNO_KJ7',
+    'device/tecno/kj7',
     'hardware/mediatek',
     'hardware/mediatek/libion_mtk',
     'hardware/mediatek/libmtkperf_client',
 ]
 
 module = ExtractUtilsModule(
-    'TECNO-KJ7',
+    'kj7',
     'tecno',
-    device_rel_path='device/tecno/TECNO_KJ7',
+    device_rel_path='device/tecno/kj7',
     namespace_imports=namespace_imports,
 )
 
