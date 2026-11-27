@@ -221,8 +221,7 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_SYSTEM_PROPERTIES += \
     persist.dbg.volte_avail_ovr=1 \
-    persist.dbg.wfc_avail_ovr=1 \
-    ro.com.google.clientidbase=android-transsion
+    persist.dbg.wfc_avail_ovr=1
 
 # Bluetooth Profiles
 PRODUCT_SYSTEM_PROPERTIES += \
