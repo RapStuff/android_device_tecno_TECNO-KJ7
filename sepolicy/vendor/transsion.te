@@ -104,6 +104,7 @@ allow mtk_hal_pq sysfs:file r_file_perms;
 
 # Health HAL
 allow hal_health_default sysfs:file r_file_perms;
+allow hal_health_default sysfs_vbus:file r_file_perms;
 
 # Transsion & MTK daemons
 dontaudit bip net_dns_prop:file r_file_perms;

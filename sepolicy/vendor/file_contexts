@@ -25,6 +25,7 @@
 /dev/elliptic[0-9]*                                                                           u:object_r:elliptic_device:s0
 
 # Transsion / MTK vendor services
+/(vendor|system/vendor)/bin/hw/android\.hardware\.health-service\.kj7                            u:object_r:hal_health_default_exec:s0
 /(vendor|system/vendor)/bin/hw/vendor\.transsion\.hardware\.trancam\.trancamserver@1\.0-service   u:object_r:trancamserver_exec:s0
 /(vendor|system/vendor)/bin/hw/vendor\.mediatek\.hardware\.tranHwInfo@.*-service                  u:object_r:tran_hwinfo_binder_exec:s0
 /(vendor|system/vendor)/bin/hw/vendor\.mediatek\.hardware\.paytrigger@1\.0-service                u:object_r:hal_paytrigger_exec:s0

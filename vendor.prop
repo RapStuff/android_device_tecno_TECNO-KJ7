@@ -177,6 +177,8 @@ vendor.mtk.vdec.waitkeyframeforplay=15
 
 # Fast Charging
 persist.vendor.mediatek.fast_charging.support=1
+ro.vendor.mtk_fast_charging_support=1
+ro.vendor.tran.midtest.rfc_charge_support=1
 
 # Memory / ZRAM
 persist.vendor.swapfile_enable=false
