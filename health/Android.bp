@@ -1,0 +1,49 @@
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+
+cc_defaults {
+    name: "android.hardware.health-service.kj7-defaults",
+    defaults: [
+        "libhealth_aidl_impl_user",
+        "libhealth_aidl_charger_defaults",
+    ],
+    relative_install_path: "hw",
+    vintf_fragments: ["android.hardware.health-service.kj7.xml"],
+    srcs: [
+        "Health.cpp",
+    ],
+    shared_libs: [
+        "libbase",
+    ],
+    static_libs: [
+        "libhealth_aidl_impl",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+}
+
+cc_binary {
+    name: "android.hardware.health-service.kj7",
+    defaults: ["android.hardware.health-service.kj7-defaults"],
+    vendor: true,
+    init_rc: ["android.hardware.health-service.kj7.rc"],
+    overrides: [
+        "android.hardware.health-service.mediatek",
+        "charger",
+    ],
+}
+
+cc_binary {
+    name: "android.hardware.health-service.kj7-recovery",
+    defaults: ["android.hardware.health-service.kj7-defaults"],
+    recovery: true,
+    init_rc: ["android.hardware.health-service.kj7-recovery.rc"],
+    overrides: [
+        "android.hardware.health-service.mediatek-recovery",
+        "charger.recovery",
+    ],
+}

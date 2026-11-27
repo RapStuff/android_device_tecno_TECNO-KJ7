@@ -125,9 +125,9 @@ on property:sys.boot_completed=1
     setprop persist.vendor.powerhal.dex2oat_threads 4
     #SPD: add for control dex2oat cpu by fan.feng1 20230619 end
 
-    # Uncap Transsion 33W fast charging
+    # Uncap Transsion 33W fast charging (disable overnight MTK smart charging throttling)
     write /sys/devices/platform/charger/enable_meta_current_limit 0
-    write /sys/devices/platform/charger/enable_sc 1
+    write /sys/devices/platform/charger/enable_sc 0
     write /sys/devices/platform/charger/sc_ibat_limit 7000
 #SPD: modify for swap zram write-back by zihan.ju at 20230922 start
 on property:sys.boot_completed=1 && property:persist.vendor.swapfile_enable=true && property:ro.vendor.memfusion2_2.support=true
