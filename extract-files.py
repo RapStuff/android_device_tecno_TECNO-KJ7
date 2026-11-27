@@ -5,6 +5,7 @@
 #
 
 import os
+import re
 import struct
 
 from extract_utils.fixups_blob import (
@@ -181,6 +182,64 @@ def patch_libsl_fp_impl(ctx, file, file_path: str, *args, **kwargs):
         f.write(elf)
 
 
+def patch_c2_init_rc_64b(ctx, file, file_path: str, *args, **kwargs):
+    """Switch MediaTek Codec2 HIDL service RC entry to the 64-bit binary."""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = f.read()
+    updated = re.sub(
+        r'/vendor/bin/hw/android\.hardware\.media\.c2@1\.2-mediatek(?!-64b)',
+        '/vendor/bin/hw/android.hardware.media.c2@1.2-mediatek-64b',
+        data,
+    )
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(updated)
+
+
+def patch_c2_seccomp_64b(ctx, file, file_path: str, *args, **kwargs):
+    """Translate 32-bit ARM seccomp syscall rules to AArch64 for c2@1.2-mediatek-64b."""
+    arm_to_arm64 = (
+        (r'^mmap2:', 'mmap:'),
+        (r'^ftruncate64:\s*1$', 'ftruncate: 1'),
+        (r'^getuid32:\s*1$', 'getuid: 1'),
+        (r'^geteuid32:\s*1$', 'geteuid: 1'),
+        (r'^getgid32:\s*1$', 'getgid: 1'),
+        (r'^getegid32:\s*1$', 'getegid: 1'),
+        (r'^getgroups32:\s*1$', 'getgroups: 1'),
+        (r'^open:\s*1$', 'openat: 1'),
+        (r'^fstat64:\s*1$', 'fstat: 1'),
+        (r'^readlink:\s*1$', 'readlinkat: 1'),
+        (r'^fstatfs64:\s*1$', 'fstatfs: 1'),
+        (r'^_llseek:\s*1$', 'lseek: 1'),
+        (r'^fstatat64:\s*1$', 'newfstatat: 1'),
+        (r'^ugetrlimit:\s*1$', 'getrlimit: 1'),
+        (r'^sigreturn:\s*1$', 'rt_sigreturn: 1'),
+        (r'^fcntl64:\s*1$', 'fcntl: 1'),
+    )
+    with open(file_path, 'r', encoding='utf-8') as f:
+        lines = f.read().splitlines()
+
+    seen = set()
+    out = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith('#'):
+            for pat, rep in arm_to_arm64:
+                if re.match(pat, stripped):
+                    line = re.sub(pat, rep, stripped)
+                    break
+            if line in seen:
+                continue
+            seen.add(line)
+        out.append(line)
+
+    for extra in ('unlinkat: 1', 'sched_setscheduler: 1'):
+        if extra not in seen:
+            out.append(extra)
+
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(out) + '\n')
+
+
 
 lib_fixups: lib_fixups_user_type = {
     **lib_fixups,
@@ -200,20 +259,25 @@ blob_fixups: blob_fixups_user_type = {
         .replace_needed('android.hardware.security.sharedsecret-V1-ndk_platform.so', 'android.hardware.security.sharedsecret-V1-ndk.so')
         .add_needed('android.hardware.security.rkp-V1-ndk.so'),
     (
-        'vendor/bin/hw/android.hardware.media.c2@1.2-mediatek',
         'vendor/bin/hw/android.hardware.media.c2@1.2-mediatek-64b',
     ): blob_fixup()
         .replace_needed('libavservices_minijail_vendor.so', 'libavservices_minijail.so')
         .add_needed('libstagefright_foundation-v33.so'),
     (
-        'vendor/lib/libcodec2_mtk_venc.so',
-        'vendor/lib/libcodec2_mtk_vdec.so',
+        'vendor/etc/init/android.hardware.media.c2@1.2-mediatek.rc',
+    ): blob_fixup()
+        .call(patch_c2_init_rc_64b, need_tmp_dir=False),
+    (
+        'vendor/etc/seccomp_policy/android.hardware.media.c2@1.2-mediatek-seccomp-policy',
+        'vendor/etc/seccomp_policy/android.hardware.media.c2@1.2-extended-seccomp-policy',
+    ): blob_fixup()
+        .call(patch_c2_seccomp_64b, need_tmp_dir=False),
+    (
         'vendor/lib64/libcodec2_mtk_venc.so',
         'vendor/lib64/libcodec2_mtk_vdec.so',
     ): blob_fixup()
         .replace_needed('libformatter.so', 'libformatter_mtk.so'),
     (
-        'vendor/lib/libformatter_mtk.so',
         'vendor/lib64/libformatter_mtk.so',
     ): blob_fixup()
         .fix_soname(),
@@ -226,7 +290,6 @@ blob_fixups: blob_fixups_user_type = {
     ): blob_fixup()
         .binary_regex_replace(b'android.hardware.vibrator-service.mediatek', b'android.hardware.vibrator-service.richtap'),
     (
-        'vendor/lib/hw/face.default.so',
         'vendor/lib64/hw/face.default.so',
     ): blob_fixup()
         .replace_needed('android.hardware.power-V1-ndk_platform.so', 'android.hardware.power-V1-ndk.so')
@@ -250,25 +313,20 @@ blob_fixups: blob_fixups_user_type = {
     ): blob_fixup()
         .add_needed('libutils.so'),
     (
-        'vendor/lib/libpcap_mtk.so',
         'vendor/lib64/libpcap_mtk.so',
     ): blob_fixup()
         .fix_soname(),
     (
-        'vendor/lib/libpkm.so',
         'vendor/lib64/libpkm.so',
     ): blob_fixup()
         .replace_needed('libpcap.so', 'libpcap_mtk.so'),
     (
-        'vendor/lib/hw/hwcomposer.mtk_common.so',
         'vendor/lib64/hw/hwcomposer.mtk_common.so',
         'vendor/lib64/hw/hwcomposer.mtk_fold.so',
     ): blob_fixup()
         .add_needed('libprocessgroup_shim.so'),
     (
-        'vendor/lib/libnir_neon_driver_ndk.mtk.vndk.so',
         'vendor/lib64/libnir_neon_driver_ndk.mtk.vndk.so',
-        'vendor/lib/libspeech_enh_lib.so',
         'vendor/lib64/libspeech_enh_lib.so',
         'vendor/lib64/libnotifyaudiohal.so',
         'vendor/lib64/hw/sensors.elliptic.so',
@@ -284,7 +342,6 @@ blob_fixups: blob_fixups_user_type = {
     ): blob_fixup()
         .add_needed('liblog.so'),
     (
-        'vendor/lib/mt6789/libaalservice.so',
         'vendor/lib64/mt6789/libaalservice.so',
     ): blob_fixup()
         .replace_needed('libsensorndkbridge.so', 'android.hardware.sensors@1.0-convert-shared.so')
@@ -298,26 +355,6 @@ blob_fixups: blob_fixups_user_type = {
     (
         'vendor/bin/hw/mt6789/camerahalserver',
         'vendor/bin/hw/vendor.transsion.hardware.trancam.trancamserver@1.0-service',
-        'vendor/lib/hw/mt6789/vendor.mediatek.hardware.camera.atms@1.0-impl.so',
-        'vendor/lib/hw/mt6789/vendor.mediatek.hardware.camera.bgservice@1.1-impl.so',
-        'vendor/lib/libcam3_transerverengine.so',
-        'vendor/lib/mt6789/lib3a.ae.core.so',
-        'vendor/lib/mt6789/lib3a.log.so',
-        'vendor/lib/mt6789/libcam.hal3a.log.so',
-        'vendor/lib/mt6789/libcameracustom.so',
-        'vendor/lib/mt6789/libdpframework.so',
-        'vendor/lib/mt6789/libmtkcam.atmseventmgr.so',
-        'vendor/lib/mt6789/libmtkcam.eventcallback.so',
-        'vendor/lib/mt6789/libmtkcam_debugutils.so',
-        'vendor/lib/mt6789/libmtkcam_metadata.so',
-        'vendor/lib/mt6789/libmtkcam_stdutils.so',
-        'vendor/lib/mt6789/libmtkcam_sysutils.so',
-        'vendor/lib/mt6789/libmtkcam_tuning_utils.so',
-        'vendor/lib/mt6789/libmtkcam_ulog.so',
-        'vendor/lib/vendor.mediatek.hardware.camera.atms@1.0.so',
-        'vendor/lib/vendor.mediatek.hardware.camera.bgservice@1.0.so',
-        'vendor/lib/vendor.mediatek.hardware.camera.bgservice@1.1.so',
-        'vendor/lib/vendor.transsion.hardware.trancam.trancamserver@1.0.so',
         'vendor/lib64/hw/mt6789/android.hardware.camera.provider@2.6-impl-mediatek.so',
         'vendor/lib64/hw/mt6789/vendor.mediatek.hardware.camera.atms@1.0-impl.so',
         'vendor/lib64/hw/mt6789/vendor.mediatek.hardware.camera.bgservice@1.1-impl.so',
@@ -459,9 +496,7 @@ blob_fixups: blob_fixups_user_type = {
         'vendor/bin/meta_tst',
         'vendor/bin/nfcstackp-vendor',
         'vendor/bin/STFlashTool',
-        'vendor/lib/libnvram.so',
         'vendor/lib64/libnvram.so',
-        'vendor/lib/libsysenv.so',
         'vendor/lib64/libsysenv.so',
     ): blob_fixup()
         .add_needed('libbase_shim.so'),
@@ -475,7 +510,6 @@ blob_fixups: blob_fixups_user_type = {
     ): blob_fixup()
         .add_needed('libtflite_native_gainference.so'),
     (
-        'vendor/lib/mt6789/libneuralnetworks_sl_driver_mtk_prebuilt.so',
         'vendor/lib64/mt6789/libneuralnetworks_sl_driver_mtk_prebuilt.so',
     ): blob_fixup()
         .clear_symbol_version('AHardwareBuffer_allocate')
@@ -507,24 +541,19 @@ blob_fixups: blob_fixups_user_type = {
         .replace_needed('libhidlbase.so', 'libhidlbase-v32.so')
         .replace_needed('libutils.so', 'libutils-v32.so'),
     (
-        'vendor/lib/hw/mt6789/vendor.mediatek.hardware.pq@2.15-impl.so',
         'vendor/lib64/hw/mt6789/vendor.mediatek.hardware.pq@2.15-impl.so',
     ): blob_fixup()
         .replace_needed('libhidlbase.so', 'libhidlbase-v32.so')
         .replace_needed('libutils.so', 'libutils-v32.so')
         .replace_needed('libtinyxml2.so', 'libtinyxml2-v34.so'),
     (
-        'vendor/lib/mt6789/libpq_prot.so',
         'vendor/lib64/mt6789/libpq_prot.so',
     ): blob_fixup()
         .replace_needed('libutils.so', 'libutils-v32.so'),
     (
         'vendor/bin/dconfig',
-        'vendor/lib/librt_extamp_intf.so',
         'vendor/lib64/librt_extamp_intf.so',
-        'vendor/lib/libpowerhal.so',
         'vendor/lib64/libpowerhal.so',
-        'vendor/lib/hw/audio.primary.mediatek.so',
         'vendor/lib64/hw/audio.primary.mediatek.so',
     ): blob_fixup()
         .replace_needed('libtinyxml2.so', 'libtinyxml2-v34.so'),
