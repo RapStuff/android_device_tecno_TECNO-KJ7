@@ -18,5 +18,3 @@ type sysfs_lcm_name_file, fs_type, sysfs_type;
 type gf_device, dev_type;
 type vendor_gf_data_file, file_type, data_file_type;
 
-# Charging Control
-type sysfs_bypass_charger, fs_type, sysfs_type;

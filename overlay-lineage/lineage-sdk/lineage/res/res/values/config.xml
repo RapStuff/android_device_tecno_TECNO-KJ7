@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Enable LineageOS Charging Control -->
-    <bool name="config_chargingControlEnabled">true</bool>
-</resources>

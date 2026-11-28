@@ -44,3 +44,7 @@
 /(vendor|system/vendor)/lib(64)?/libutils-v32\.so                                                 u:object_r:same_process_hal_file:s0
 /(vendor|system/vendor)/lib(64)?/libprocessgroup_shim\.so                                         u:object_r:same_process_hal_file:s0
 /(vendor|system/vendor)/lib(64)?/hw/(mt[0-9]+[a-z]*/)?gralloc\.common\.so                         u:object_r:same_process_hal_file:s0
+
+# Light & Power HALs
+/(vendor|system/vendor)/bin/hw/android\.hardware\.light-service\.lineage                         u:object_r:hal_light_default_exec:s0
+/(vendor|system/vendor)/bin/hw/android\.hardware\.power-service\.lineage-libperfmgr             u:object_r:hal_power_default_exec:s0

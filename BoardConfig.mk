@@ -72,7 +72,7 @@ BOARD_TRANSSION_DYNAMIC_PARTITIONS_SIZE := 8866512896
 BOARD_MAIN_SIZE := $(BOARD_TRANSSION_DYNAMIC_PARTITIONS_SIZE)
 BOARD_MAIN_PARTITION_LIST := system system_ext product vendor vendor_dlkm odm_dlkm
 
-ifeq ($(WITH_GMS),true)
+ifneq ($(filter true,$(WITH_GMS) $(MIKU_GAPPS)),)
 TARGET_RO_FILE_SYSTEM_TYPE := erofs
 else
 TARGET_RO_FILE_SYSTEM_TYPE := ext4
@@ -87,7 +87,6 @@ BOARD_ODM_DLKMIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_USERDATAIMAGE_FILE_SYSTEM_TYPE := f2fs
 TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
--include vendor/lineage/config/BoardConfigReservedSize.mk
 TARGET_COPY_OUT_VENDOR := vendor
 TARGET_COPY_OUT_PRODUCT := product
 TARGET_COPY_OUT_SYSTEM_EXT := system_ext
@@ -136,15 +135,24 @@ DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE := \
 # Power
 $(call soong_config_set,power_libperfmgr,mode_extension_lib,//device/tecno/kj7/power:libperfmgr-ext-tecno_kj7)
 
-# Health / Charging Control
-$(call soong_config_set,lineage_health,charging_control_charging_path,/sys/devices/platform/charger/bypass_charger)
-$(call soong_config_set,lineage_health,charging_control_charging_enabled,0)
-$(call soong_config_set,lineage_health,charging_control_charging_disabled,1)
-
-# SELinux
-include device/mediatek/sepolicy_vndr/SEPolicy.mk
-BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/vendor
-SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/private
+# SELinux (include MTK vendor sepolicy paths directly so stock Lineage sepolicy_vndr builds cleanly on Miku UI)
+MTK_SEPOLICY_PATH := device/mediatek/sepolicy_vndr
+TRUSTY_DEVICE_PATH := device/generic/trusty
+-include device/lineage/sepolicy/libperfmgr/sepolicy.mk
+BOARD_VENDOR_SEPOLICY_DIRS += \
+    $(MTK_SEPOLICY_PATH)/base/vendor \
+    $(TRUSTY_DEVICE_PATH)/custom_vm/sepolicy \
+    $(DEVICE_PATH)/sepolicy/vendor
+SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += \
+    $(MTK_SEPOLICY_PATH)/base/private \
+    $(TRUSTY_DEVICE_PATH)/sepolicy/system_ext/private \
+    $(DEVICE_PATH)/sepolicy/private
+SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += $(MTK_SEPOLICY_PATH)/base/public
+ifneq ($(TARGET_BUILD_VARIANT),user)
+BOARD_VENDOR_SEPOLICY_DIRS += $(MTK_SEPOLICY_PATH)/debug/vendor
+SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(MTK_SEPOLICY_PATH)/debug/private
+SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += $(MTK_SEPOLICY_PATH)/debug/public
+endif
 
 # Wi-Fi
 WPA_SUPPLICANT_VERSION := VER_0_8_X

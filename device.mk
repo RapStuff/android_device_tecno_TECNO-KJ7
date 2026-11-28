@@ -26,7 +26,7 @@ PRODUCT_SYSTEM_PROPERTIES += ro.sf.lcd_density=480
 
 DEVICE_PACKAGE_OVERLAYS += \
     $(LOCAL_PATH)/overlay \
-    $(LOCAL_PATH)/overlay-lineage
+    $(LOCAL_PATH)/overlay-miku
 
 # Soong namespaces
 PRODUCT_SOONG_NAMESPACES += \
@@ -103,8 +103,7 @@ PRODUCT_PACKAGES += \
 # Health
 PRODUCT_PACKAGES += \
     android.hardware.health-service.kj7 \
-    android.hardware.health-service.kj7-recovery \
-    vendor.lineage.health-service.default
+    android.hardware.health-service.kj7-recovery
 
 # HIDL / VNDK / Compat
 PRODUCT_PACKAGES += \

@@ -69,7 +69,7 @@
     <string-array translatable="false" name="config_defaultPinnerServiceFiles">
         <item>/system/framework/framework.jar</item>
         <item>/system/framework/services.jar</item>
-        <item>/system_ext/priv-app/SystemUI/SystemUI.apk</item>
+        <item>/system_ext/priv-app/MikuSystemUI/MikuSystemUI.apk</item>
     </string-array>
     <bool name="config_pinnerCameraApp">true</bool>
     <integer name="config_pinnerHomePinBytes">62914560</integer>
