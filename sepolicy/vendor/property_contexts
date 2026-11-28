@@ -14,3 +14,6 @@ persist.vendor.goodix.                   u:object_r:vendor_fingerprint_prop:s0
 # Camera
 ro.vendor.transsion.camera_watermark     u:object_r:vendor_transsion_camera_watermark_support_prop:s0
 vendor.debug.seninf.hs_trail             u:object_r:vendor_mtk_seninf_prop:s0
+
+# Libperfmgr Power HAL
+vendor.powerhal.                u:object_r:vendor_power_prop:s0
