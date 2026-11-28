@@ -301,7 +301,8 @@ PRODUCT_PACKAGES += \
     hostapd \
     libwifi-hal-wrapper \
     wlan_assistant \
-    wpa_supplicant
+    wpa_supplicant \
+    wpa_supplicant.conf
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/wifi/p2p_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/p2p_supplicant_overlay.conf \
