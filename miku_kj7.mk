@@ -8,8 +8,9 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/window_extensions.mk)
 # Inherit from kj7 device
 $(call inherit-product, device/tecno/kj7/device.mk)
 
-# Maintainer
+# Maintainer & GApps
 MIKU_MASTER := ErOneSoul
+MIKU_GAPPS ?= true
 
 # Inherit some common Miku UI stuff.
 $(call inherit-product, vendor/miku/build/product/miku_product.mk)
