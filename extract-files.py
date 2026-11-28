@@ -218,26 +218,22 @@ def patch_c2_seccomp_64b(ctx, file, file_path: str, *args, **kwargs):
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.read().splitlines()
 
-    seen_syscalls = set()
+    seen = set()
     out = []
     for line in lines:
         stripped = line.strip()
         if stripped and not stripped.startswith('#'):
             for pat, rep in arm_to_arm64:
                 if re.match(pat, stripped):
-                    stripped = re.sub(pat, rep, stripped)
+                    line = re.sub(pat, rep, stripped)
                     break
-            syscall = stripped.split(':', 1)[0].strip()
-            if syscall in seen_syscalls:
+            if line in seen:
                 continue
-            seen_syscalls.add(syscall)
-            line = stripped
+            seen.add(line)
         out.append(line)
 
     for extra in ('unlinkat: 1', 'sched_setscheduler: 1'):
-        syscall = extra.split(':', 1)[0].strip()
-        if syscall not in seen_syscalls:
-            seen_syscalls.add(syscall)
+        if extra not in seen:
             out.append(extra)
 
     with open(file_path, 'w', encoding='utf-8') as f:
